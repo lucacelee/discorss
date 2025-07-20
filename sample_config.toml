@@ -1,0 +1,11 @@
+[Discord]
+token = ""
+channel = 
+
+[RSS]
+title = ""
+description = ""
+link = ""
+
+rss_version = "2.0"
+prefer_config = true
