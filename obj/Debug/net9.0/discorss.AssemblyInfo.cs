@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("discorss")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ed5223f477f61f2bc6109dd1c4909ba57478f37d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+fa4d05eb7eae6f18c5abb707483d41a4a1d11378")]
 [assembly: System.Reflection.AssemblyProductAttribute("discorss")]
 [assembly: System.Reflection.AssemblyTitleAttribute("discorss")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
