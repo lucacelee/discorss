@@ -1,8 +1,8 @@
-﻿using RSS;
+﻿using System.Timers;
+using RSS;
 using Formatting;
 using DSharpPlus;
 using Tommy;
-using CommunityToolkit.HighPerformance.Helpers;
 
 class Program {
     static async Task Main(string[] args) {

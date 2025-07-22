@@ -61,31 +61,35 @@ namespace RSS{
         public List<Item> Items;
     }
     public class Item {
+
         [XmlElement("title")]
-        public string Title { get; set; }
+        public required string Title { get; set; }
 
         [XmlElement("link")]
         public string Link { get; set; }
 
         [XmlElement("author")]
-        public string Author { get; set; }
+        public required string Author { get; set; }
 
         [XmlElement("description")]
-        public string Description { get; set; }
+        public required string Description { get; set; }
+
+        [XmlElement("origin")]
+        public string? Origin { get; set; }
 
         [XmlElement("enclosure")]
         public List<Enclosure> Media;
     }
     public class Enclosure {
-        public string LocalUrl { get; set; }
+        public required string LocalUrl { get; set; }
         
         [XmlAttribute("url")]
-        public string MediaUrl { get; set; }
+        public required string MediaUrl { get; set; }
 
         [XmlAttribute("length")] 
-	    public int Length { get; set; } 
+	    public required int Length { get; set; } 
 
         [XmlAttribute("type")]
-        public string MediaType { get; set; }
+        public required string MediaType { get; set; }
     }
 }
