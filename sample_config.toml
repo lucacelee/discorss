@@ -1,16 +1,20 @@
 [Discord]
 token = ""                      # Your Discord app token, you get it here: https://discord.com/developers/applications/
 channel = 1111111111111111111   # Channel ID of the channel that you want to mirror; the real one is the exact same length
+roles = ["@everyone"]           # Roles that should be trimmed in the beginning of a message
+inline_roles = ["everyone"]     # Replacement strings for roles that are pinged inside of a message
 
 [RSS]
 title = ""                      # The title of your feed (you can use your Discord channel name too)
 description = ""                # What are you posting here / what is this channel about?
-link = ""                       # The link to the RSS feed on your website or any other hosting solution
+link = ""                       # The link to the RSS feed folder on your website or any other hosting solution
+default = "Announcement for "   # Default title for an RSS item, in case one can't be parsed in the message (appends date afterwards)
 
 rss_version = "2.0"             # *Version of the RSS specification, to which this dosument adheres
 prefer_config = true            # *Do you prefer to use the data in the config over the existing data in the XML document?
 
 [Local]
 media_folder = "media"          # *The folder to which all downloaded files will go; used for attachements in the feed
+rss_feed_file = "feed.xml"      # The file, where your RSS feed is stored
 
 #                                 * — if you don't know what you are doing, just leave it as is, at its default value
