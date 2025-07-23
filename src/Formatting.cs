@@ -4,16 +4,17 @@ using RSS;
 namespace Formatting {
     public class Discord {
         public static async Task<string> AddMessage(DSharpPlus.Entities.DiscordMessage M, List<string> roles, List<string> roles_replace) {
-            var Message = FormatTimestamps(Dehashtagise(RemoveRoles(M.Content, roles, roles_replace)));
+            var Message = FormatTimestamps(RemoveRoles(M.Content, roles, roles_replace)) + "\n\n By:" + M.Author!.Username;
             return await SetDescription(Message, (M.Attachments.Count > 0));
         }
         public static async Task<Item> ParseMessage(DSharpPlus.Entities.DiscordMessage M, List<string> roles, List<string> roles_replace, string title_default) {
             var attachements = (M.Attachments.Count > 0); var time = M.Timestamp; title_default = title_default.Trim() + " ";
-            var message = FormatTimestamps(Dehashtagise(RemoveRoles(M.Content, roles, roles_replace)));
+            var message = FormatTimestamps(RemoveRoles(M.Content, roles, roles_replace)) + "\n\n By:" + M.Author!.Username;
             Item Message = new() {
                 Title = await SetTitle(message, attachements, time, roles, roles_replace, title_default),
                 Description = await SetDescription(message, attachements),
                 Author = M.Author!.Username,
+                Media = [],
                 Origin = "Discord"
             };
             Console.WriteLine($"The result of parsing the item.\nTitle: {Message.Title}, author: {Message.Author}, Description:\n'{Message.Description}'");
@@ -28,7 +29,7 @@ namespace Formatting {
             for (int i = 0; i < lines.Length; i++) {
                 lines[i] = (lines[i].StartsWith('#')) ? SplitOnWhitespace(lines[i], 2, 1, ' ') : lines[i];  // Couldn't use a foreach loop neatly
             }
-            message = FormatLikeXML(EscapeXML(String.Join("\n", lines)), false);
+            message = FormatLikeXML(String.Join("\n", lines), false);
             return message;
         }
 
@@ -37,13 +38,13 @@ namespace Formatting {
             var CleanMessage = FormatLikeXML(RemoveRoles(message, roles, roles_replace), true);
             var FirstLine = SplitOnWhitespace(CleanMessage, 2, 0, '\n');
             if (message.Length < 100 && attachements && !message.Contains('\n'))
-                return EscapeXML(CleanMessage);
+                return CleanMessage;
             else if (message.Length < 150 && message.Contains('\n'))
-                return EscapeXML(FirstLine);
+                return FirstLine;
             else if (message.StartsWith('#'))
-                return EscapeXML(SplitOnWhitespace(FirstLine, 2, 1, ' '));
+                return (message.EndsWith('#')) ? SplitOnWhitespace(SplitOnWhitespace(FirstLine, 2, 1, ' '), -1, ^1, ' ') : SplitOnWhitespace(FirstLine, 2, 1, ' ');
             else if (FirstLine.Length < 150)
-                return EscapeXML(FirstLine);
+                return FirstLine;
             else return String.Concat(title_default, time_offset.DateTime.ToUniversalTime(), " UTC");
         }
 
@@ -61,16 +62,6 @@ namespace Formatting {
             return message;
         }
 
-        private static string Dehashtagise (string Message) {
-            Text Extract = new() {
-                Pattern = @"(#){1,3}\s(?<Body>.+)\s(#){1,3}",
-                Onset = "",
-                Coda = "",
-                Replacement = @"\*\*${Body}\*\*"
-            };
-            return Extract.Replace(Message);
-        }
-
         private static string FormatTimestamps (string Message) {
             string Timestamp = @"\s(<t:)(?<Digits>\d+)(:\w>)\s";
             Console.WriteLine("Reformatting the timestamps.");
@@ -82,13 +73,12 @@ namespace Formatting {
             return Message;
         }
 
-        private static string EscapeXML (string Message) {
-            return Message.Replace("'", "&apos").Replace("\"", "&quot").Replace("<", "&lt").Replace(">", "&gt");
-        }
-
-        private static string SplitOnWhitespace (string message, int parts, int part, char space) {
+        private static string SplitOnWhitespace (string message, int parts, Index part, char space) {
             Console.WriteLine($"Splitting the string! Parts: {parts}, chosing №{part}.");
-            return message.Split(space, parts, StringSplitOptions.TrimEntries)[part];
+            if (parts == -1)
+                return message.Split(space, StringSplitOptions.TrimEntries)[part];
+            else
+                return message.Split(space, parts, StringSplitOptions.TrimEntries)[part];
         }
 
         private static string FormatLikeXML (string Message, bool RemoveFormatting) {
@@ -99,6 +89,8 @@ namespace Formatting {
             if (RemoveFormatting)
                 uOnset = uCoda = sOnset = sCoda = cOnset = cCoda = iOnset = iCoda = bOnset = bCoda = jOnset = jCoda = "";
 
+            Message = (!RemoveFormatting) ? Message.Replace("\n", "\n<br>") : Message;
+
             List<Text> Strings = [];
             Strings.Add(new Text {
                 Pattern = @"(_){2}(?<Body>.+)(_){2}",
@@ -108,8 +100,8 @@ namespace Formatting {
             });
             Strings.Add(new Text {
                 Pattern = @"(_)(?<Body>.+)(_)",
-                Onset = uOnset,
-                Coda = uCoda,
+                Onset = iOnset,
+                Coda = iCoda,
                 Replacement = @"${Body}"
             });
             Strings.Add(new Text {

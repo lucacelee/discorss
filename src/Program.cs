@@ -9,7 +9,7 @@ class Program {
     private static Boolean Linking;
     static async Task Main(string[] args) {
         // Console.WriteLine("Hello, World!");
-        string media_folder, token, configdir, rss;
+        string media_folder, token, configdir, rss, Link;
         int linking_time;
         List<string> roles = [];
         List<string> roles_replace = [];
@@ -63,6 +63,7 @@ class Program {
 
             media_folder = table["Local"]["media_folder"];
             rss = table["Local"]["rss_feed_file"];
+            Link = table["RSS"]["link"];
 
             linking_time = (int)Decimal.Parse(table["Discord"]["linking_time"]);
 
@@ -76,7 +77,7 @@ class Program {
             Console.WriteLine("You must specify the path to the RSS feed."); return;
         }
 
-        var Feed = XML.GiveBirth(rss, table["RSS"]["prefer_config"], table["RSS"]["rss_version"], table["RSS"]["title"], table["RSS"]["link"], table["RSS"]["description"]);
+        var Feed = XML.GiveBirth(rss, table["RSS"]["prefer_config"], table["RSS"]["rss_version"], table["RSS"]["title"], Link, table["RSS"]["description"]);
         Console.WriteLine($"RSS Version: {Feed.Version}, title: {Feed.Channel.Title}, Link: {Feed.Channel.Link},\ndescription: '{Feed.Channel.Description}'.");
 
         ulong ChannelID = (ulong)Decimal.Parse(table["Discord"]["channel"]);  
@@ -96,15 +97,16 @@ class Program {
                         SetTimer(linking_time); Linking = true;
                         Item Message = await Discord.ParseMessage(e.Message, roles, roles_replace, table["RSS"]["default"]);
                         var attachements = new List<Enclosure>();
-                        await DownloadAttachements(http, e, attachements, media_folder);
+                        await DownloadAttachements(http, e, attachements, media_folder, Link);
                         Message.Media = attachements;
-                        Feed.Channel.Items.Insert(0, Message);
+                        Feed.Channel.Items!.Add(Message);
                     } else {
                         StopTimer(); SetTimer(linking_time);
                         Console.WriteLine("Adding this message to the previous post.");
-                        Feed.Channel.Items[0].Description = String.Concat(Feed.Channel.Items[0].Description, "\n", await Discord.AddMessage(e.Message, roles, roles_replace));
-                        await DownloadAttachements(http, e, Feed.Channel.Items[0].Media, media_folder);
+                        Feed.Channel.Items![^1].Description = String.Concat(Feed.Channel.Items[^1].Description, "<br>\n<br>\n", await Discord.AddMessage(e.Message, roles, roles_replace));
+                        await DownloadAttachements(http, e, Feed.Channel.Items[^1].Media!, media_folder, Link);
                     }
+                    await XML.PutDown(rss, Feed);
                 }
             }
         ));
@@ -127,21 +129,21 @@ class Program {
         return (roles, roles_replace);
     }
 
-    static async Task DownloadAttachements (HttpClient http, DSharpPlus.EventArgs.MessageCreatedEventArgs e, List<Enclosure> attachements, string MediaFolder) {
+    static async Task DownloadAttachements (HttpClient http, DSharpPlus.EventArgs.MessageCreatedEventArgs e, List<Enclosure> attachements, string MediaFolder, string Link) {
         Console.WriteLine("Downloading attachements: ");
         foreach (var attachement in e.Message.Attachments)
         {            // We cycle through every attachement and download it
             Console.Write($"{attachement.Id}, ");
             var data = await http.GetByteArrayAsync(attachement.Url);
             Directory.CreateDirectory(MediaFolder);
-            string URL = Path.Combine(MediaFolder, attachement.FileName!);
+            string URL = Path.Combine(MediaFolder, attachement.Id.ToString() + "_" + attachement.FileName!);
             await File.WriteAllBytesAsync(URL, data);
             var A = new Enclosure
             {
                 LocalUrl = URL,
-                MediaUrl = Path.Combine("link", URL),
+                MediaUrl = Path.Combine(Link, URL),
                 MediaType = attachement.MediaType!,
-                Length = (attachement.MediaType!.Split('/')[0] == "audio") ? attachement.MediaType.Length : 0
+                Length = (attachement.MediaType!.Split('/')[0] == "audio" || attachement.MediaType!.Split('/')[0] == "video") ? attachement.MediaType.Length : 0
             };
             attachements.Add(A);
         }
