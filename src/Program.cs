@@ -5,9 +5,12 @@ using DSharpPlus;
 using Tommy;
 
 class Program {
+    private static System.Timers.Timer LinkTimer;
+    private static Boolean Linking;
     static async Task Main(string[] args) {
         // Console.WriteLine("Hello, World!");
-        string media_folder, stringID, token, configdir, rss, title, description, link, version, default_title;
+        string media_folder, token, configdir, rss;
+        int linking_time;
         List<string> roles = [];
         List<string> roles_replace = [];
         bool prefer_config;                 // These variables are all used later for the config
@@ -57,17 +60,11 @@ class Program {
                     Console.WriteLine($"Error on {syntaxEx.Column}:{syntaxEx.Line}: {syntaxEx.Message}");
             }
             token = table["Discord"]["token"];          // Linking the predefined variables with the information from config.toml
-            stringID = table["Discord"]["channel"];
-
-            title = table["RSS"]["title"];
-            description = table["RSS"]["description"];
-            link = table["RSS"]["link"];
-            version = table["RSS"]["rss_version"];
-            default_title = table["RSS"]["default"];
-            prefer_config = table["RSS"]["prefer_config"];
 
             media_folder = table["Local"]["media_folder"];
             rss = table["Local"]["rss_feed_file"];
+
+            linking_time = (int)Decimal.Parse(table["Discord"]["linking_time"]);
 
             (roles, roles_replace) = await GetRoles(roles, roles_replace, (TomlArray)table["Discord"]["roles"], (TomlArray)table["Discord"]["inline_roles"]);
         } catch (Exception ex) {
@@ -79,10 +76,10 @@ class Program {
             Console.WriteLine("You must specify the path to the RSS feed."); return;
         }
 
-        var Feed = XML.GiveBirth(rss, prefer_config, version, title, link, description);
+        var Feed = XML.GiveBirth(rss, table["RSS"]["prefer_config"], table["RSS"]["rss_version"], table["RSS"]["title"], table["RSS"]["link"], table["RSS"]["description"]);
         Console.WriteLine($"RSS Version: {Feed.Version}, title: {Feed.Channel.Title}, Link: {Feed.Channel.Link},\ndescription: '{Feed.Channel.Description}'.");
 
-        ulong ChannelID = (ulong)Decimal.Parse(stringID);  
+        ulong ChannelID = (ulong)Decimal.Parse(table["Discord"]["channel"]);  
 
         // DiscordConfiguration DiscordLogConfig = new () {         I would love to have more logs and a different date format
         //     MinimumLogLevel = LogLevel.Debug,                    but this looks a bit outdated and I don't know how to do it
@@ -94,26 +91,20 @@ class Program {
         builder.ConfigureEventHandlers(                     // A bunch of generic D#+ stuff to initialise the bot and handle new messages, all
             b => b.HandleMessageCreated(async (s, e) => {   // from the official guide btw: https://dsharpplus.github.io/DSharpPlus/index.html
                 if (e.Channel.Id == ChannelID) {
-                    // Console.Write($"Attachement 0 url: {e.Message.Attachments[0].Url}. ");
                     Console.WriteLine($"Message received: «{e.Message.Content}»");
-                    Item Message = await Discord.ParseMessage(e.Message, roles, roles_replace, default_title);
-                    var attachements = new List<Enclosure>();
-                    Console.WriteLine("Downloading attachements: ");
-                    foreach (var attachement in e.Message.Attachments) {            // We cycle through every attachement and download it
-                        Console.Write($"{attachement.Id}, ");
-                        var data = await http.GetByteArrayAsync(attachement.Url);
-                        Directory.CreateDirectory(media_folder);
-                        string URL = Path.Combine(media_folder, attachement.FileName!);
-                        await File.WriteAllBytesAsync(URL, data);
-                        var A = new Enclosure {
-                            LocalUrl = URL,
-                            MediaUrl = Path.Combine("link", URL),
-                            MediaType = attachement.MediaType!,
-                            Length = (attachement.MediaType!.Split('/')[0] == "audio") ? attachement.MediaType.Length : 0
-                        };
-                        attachements.Add(A);
-                    } Message.Media = attachements;
-                    Feed.Channel.Items.Add(Message);
+                    if (!Linking) {
+                        SetTimer(linking_time); Linking = true;
+                        Item Message = await Discord.ParseMessage(e.Message, roles, roles_replace, table["RSS"]["default"]);
+                        var attachements = new List<Enclosure>();
+                        await DownloadAttachements(http, e, attachements, media_folder);
+                        Message.Media = attachements;
+                        Feed.Channel.Items.Insert(0, Message);
+                    } else {
+                        StopTimer(); SetTimer(linking_time);
+                        Console.WriteLine("Adding this message to the previous post.");
+                        Feed.Channel.Items[0].Description = String.Concat(Feed.Channel.Items[0].Description, "\n", await Discord.AddMessage(e.Message, roles, roles_replace));
+                        await DownloadAttachements(http, e, Feed.Channel.Items[0].Media, media_folder);
+                    }
                 }
             }
         ));
@@ -134,6 +125,46 @@ class Program {
         foreach (var node in toml_roles_replace) 
             roles_replace.Add(node.ToString()!);
         return (roles, roles_replace);
+    }
+
+    static async Task DownloadAttachements (HttpClient http, DSharpPlus.EventArgs.MessageCreatedEventArgs e, List<Enclosure> attachements, string MediaFolder) {
+        Console.WriteLine("Downloading attachements: ");
+        foreach (var attachement in e.Message.Attachments)
+        {            // We cycle through every attachement and download it
+            Console.Write($"{attachement.Id}, ");
+            var data = await http.GetByteArrayAsync(attachement.Url);
+            Directory.CreateDirectory(MediaFolder);
+            string URL = Path.Combine(MediaFolder, attachement.FileName!);
+            await File.WriteAllBytesAsync(URL, data);
+            var A = new Enclosure
+            {
+                LocalUrl = URL,
+                MediaUrl = Path.Combine("link", URL),
+                MediaType = attachement.MediaType!,
+                Length = (attachement.MediaType!.Split('/')[0] == "audio") ? attachement.MediaType.Length : 0
+            };
+            attachements.Add(A);
+        }
+    }
+
+    static void SetTimer(int Time) {
+        Console.WriteLine("Starting a timer for {0} seconds!", Time);
+        LinkTimer = new System.Timers.Timer(Time*1000);
+        LinkTimer.Elapsed += NotLinking!;
+        LinkTimer.AutoReset = false;
+        LinkTimer.Enabled = true;
+    }
+
+    static void StopTimer() {
+        Console.WriteLine("Timer closed!");
+        LinkTimer.Enabled = false;
+    }
+
+    private static void NotLinking(Object source, ElapsedEventArgs e) {
+        Linking = false;
+        Console.WriteLine("Linking is {0}", Linking);
+        Console.WriteLine("Timer elapsed at: {0}", e.SignalTime);
+        StopTimer();
     }
 
     public static void Print (string s) {

@@ -3,6 +3,10 @@ using RSS;
 
 namespace Formatting {
     public class Discord {
+        public static async Task<string> AddMessage(DSharpPlus.Entities.DiscordMessage M, List<string> roles, List<string> roles_replace) {
+            var Message = FormatTimestamps(Dehashtagise(RemoveRoles(M.Content, roles, roles_replace)));
+            return await SetDescription(Message, (M.Attachments.Count > 0));
+        }
         public static async Task<Item> ParseMessage(DSharpPlus.Entities.DiscordMessage M, List<string> roles, List<string> roles_replace, string title_default) {
             var attachements = (M.Attachments.Count > 0); var time = M.Timestamp; title_default = title_default.Trim() + " ";
             var message = FormatTimestamps(Dehashtagise(RemoveRoles(M.Content, roles, roles_replace)));
@@ -62,7 +66,7 @@ namespace Formatting {
                 Pattern = @"(#){1,3}\s(?<Body>.+)\s(#){1,3}",
                 Onset = "",
                 Coda = "",
-                Replacement = @"${Body}"
+                Replacement = @"\*\*${Body}\*\*"
             };
             return Extract.Replace(Message);
         }
