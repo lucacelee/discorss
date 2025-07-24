@@ -3,6 +3,7 @@ token = ""                      # Your Discord app token, you get it here: https
 channel = 1111111111111111111   # Channel ID of the channel that you want to mirror; the real one is the exact same length
 roles = ["@everyone"]           # Roles that should be trimmed in the beginning of a message
 inline_roles = ["everyone"]     # Replacement strings for roles that are pinged inside of a message
+trim_roles = [true]             # Do you want to trim the above role from the beginning of a message?
 linking_time = 180              # Time delay between multiple messages being linked into one post in seconds; default is 3 minutes
 
 [RSS]

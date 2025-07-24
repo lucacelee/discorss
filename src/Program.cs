@@ -1,18 +1,24 @@
 ﻿using System.Timers;
+using System.IO;
 using RSS;
 using Formatting;
 using DSharpPlus;
 using Tommy;
+using DSharpPlus.Entities;
 
 class Program {
     private static System.Timers.Timer LinkTimer;
     private static Boolean Linking;
+    public static Boolean RelayingRSS;
+    public static ulong ChannelID;
+    public static DiscordClient Client;
     static async Task Main(string[] args) {
         // Console.WriteLine("Hello, World!");
         string media_folder, token, configdir, rss, Link;
         int linking_time;
         List<string> roles = [];
         List<string> roles_replace = [];
+        List<bool> trim_roles = [];
         bool prefer_config;                 // These variables are all used later for the config
 
         if (args.Length == 0) {
@@ -67,7 +73,7 @@ class Program {
 
             linking_time = (int)Decimal.Parse(table["Discord"]["linking_time"]);
 
-            (roles, roles_replace) = await GetRoles(roles, roles_replace, (TomlArray)table["Discord"]["roles"], (TomlArray)table["Discord"]["inline_roles"]);
+            (roles, roles_replace, trim_roles) = await GetRoles(roles, roles_replace, trim_roles, (TomlArray)table["Discord"]["roles"], (TomlArray)table["Discord"]["inline_roles"], (TomlArray)table["Discord"]["trim_roles"]);
         } catch (Exception ex) {
             Console.WriteLine($"Error: unable to find the config file. {ex}");
             return;     // I said 'THOU SHALT NOT PASS' and not pass hast thou indeed
@@ -77,10 +83,19 @@ class Program {
             Console.WriteLine("You must specify the path to the RSS feed."); return;
         }
 
-        var Feed = XML.GiveBirth(rss, table["RSS"]["prefer_config"], table["RSS"]["rss_version"], table["RSS"]["title"], Link, table["RSS"]["description"]);
+        XML.FilePath = rss;
+        var Feed = XML.GiveBirth(table["RSS"]["prefer_config"], table["RSS"]["rss_version"], table["RSS"]["title"], Link, table["RSS"]["description"]);
         Console.WriteLine($"RSS Version: {Feed.Version}, title: {Feed.Channel.Title}, Link: {Feed.Channel.Link},\ndescription: '{Feed.Channel.Description}'.");
 
-        ulong ChannelID = (ulong)Decimal.Parse(table["Discord"]["channel"]);  
+        string WatchPath = Path.GetFullPath(rss).Replace(rss, "");
+        Console.WriteLine("Checking directory '{0}' for updates.", WatchPath);
+        using var FeedWatcher = new FileSystemWatcher(WatchPath);
+        FeedWatcher.NotifyFilter = NotifyFilters.LastWrite;
+        FeedWatcher.Changed += XML.UpdateFile;
+        FeedWatcher.Filter = "*.xml";
+        FeedWatcher.EnableRaisingEvents = true;
+
+        ChannelID = (ulong)Decimal.Parse(table["Discord"]["channel"]);  
 
         // DiscordConfiguration DiscordLogConfig = new () {         I would love to have more logs and a different date format
         //     MinimumLogLevel = LogLevel.Debug,                    but this looks a bit outdated and I don't know how to do it
@@ -89,29 +104,33 @@ class Program {
         // DiscordClient client = new(DiscordLogConfig);
         HttpClient http = new ();
         DiscordClientBuilder builder = DiscordClientBuilder.CreateDefault(token, DiscordIntents.AllUnprivileged | DiscordIntents.MessageContents);
+        builder.SetLogLevel(Microsoft.Extensions.Logging.LogLevel.Debug);
         builder.ConfigureEventHandlers(                     // A bunch of generic D#+ stuff to initialise the bot and handle new messages, all
             b => b.HandleMessageCreated(async (s, e) => {   // from the official guide btw: https://dsharpplus.github.io/DSharpPlus/index.html
-                if (e.Channel.Id == ChannelID) {
-                    Console.WriteLine($"Message received: «{e.Message.Content}»");
-                    if (!Linking) {
-                        SetTimer(linking_time); Linking = true;
-                        Item Message = await Discord.ParseMessage(e.Message, roles, roles_replace, table["RSS"]["default"]);
-                        var attachements = new List<Enclosure>();
-                        await DownloadAttachements(http, e, attachements, media_folder, Link);
-                        Message.Media = attachements;
-                        Feed.Channel.Items!.Add(Message);
-                    } else {
-                        StopTimer(); SetTimer(linking_time);
-                        Console.WriteLine("Adding this message to the previous post.");
-                        Feed.Channel.Items![^1].Description = String.Concat(Feed.Channel.Items[^1].Description, "<br>\n<br>\n", await Discord.AddMessage(e.Message, roles, roles_replace));
-                        await DownloadAttachements(http, e, Feed.Channel.Items[^1].Media!, media_folder, Link);
+                if (!RelayingRSS) {
+                    if (e.Channel.Id == ChannelID) {
+                        Console.WriteLine($"Message received: «{e.Message.Content}»");
+                        if (!Linking) {
+                            SetTimer(linking_time); Linking = true;
+                            Item Message = await Discord.ParseMessage(e.Message, roles, roles_replace, trim_roles, table["RSS"]["default"]);
+                            var attachements = new List<Enclosure>();
+                            await DownloadAttachements(http, e, attachements, media_folder, Link);
+                            Message.Media = attachements;
+                            Feed.Channel.Items!.Insert(0, Message);
+                        } else {
+                            StopTimer(); SetTimer(linking_time);
+                            Console.WriteLine("Adding this message to the previous post.");
+                            Feed.Channel.Items![0].Description = String.Concat(Feed.Channel.Items[0].Description, "<br>\n<br>\n", await Discord.AddMessage(e.Message, roles, roles_replace, trim_roles));
+                            await DownloadAttachements(http, e, Feed.Channel.Items[0].Media!, media_folder, Link);
+                        }
+                        await XML.PutDown(Feed);
                     }
-                    await XML.PutDown(rss, Feed);
                 }
             }
         ));
 
-        await builder.ConnectAsync();   // This one connects you to Discord
+        Client = builder.Build();
+        await Client.ConnectAsync();   // This one connects you to Discord
         await Task.Delay(-1);           // You make it -1 so that the program doesn't stop
     }
     static (string, string) ArrangeArguments(string[] args){
@@ -121,12 +140,14 @@ class Program {
         return (configdir, rss);
     }
 
-    static async Task<(List<string>, List<string>)> GetRoles (List<string> roles, List<string> roles_replace, TomlArray toml_roles, TomlArray toml_roles_replace) {
+    static async Task<(List<string>, List<string>, List<bool>)> GetRoles (List<string> roles, List<string> roles_replace, List<bool> trim_roles, TomlArray toml_roles, TomlArray toml_roles_replace, TomlArray toml_trim_roles) {
         foreach (var node in toml_roles)
             roles.Add(node.ToString()!);
         foreach (var node in toml_roles_replace) 
             roles_replace.Add(node.ToString()!);
-        return (roles, roles_replace);
+        foreach (var node in toml_trim_roles) 
+            trim_roles.Add(Boolean.Parse(node.ToString()!));
+        return (roles, roles_replace, trim_roles);
     }
 
     static async Task DownloadAttachements (HttpClient http, DSharpPlus.EventArgs.MessageCreatedEventArgs e, List<Enclosure> attachements, string MediaFolder, string Link) {

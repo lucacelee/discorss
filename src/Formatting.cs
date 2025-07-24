@@ -1,17 +1,18 @@
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 using RSS;
 
 namespace Formatting {
     public class Discord {
-        public static async Task<string> AddMessage(DSharpPlus.Entities.DiscordMessage M, List<string> roles, List<string> roles_replace) {
-            var Message = FormatTimestamps(RemoveRoles(M.Content, roles, roles_replace)) + "\n\n By:" + M.Author!.Username;
+        public static async Task<string> AddMessage(DSharpPlus.Entities.DiscordMessage M, List<string> roles, List<string> roles_replace, List<bool> trim_roles) {
+            var Message = FormatTimestamps(RemoveRoles(M.Content, roles, roles_replace, trim_roles)) + "\n\n By:" + M.Author!.Username;
             return await SetDescription(Message, (M.Attachments.Count > 0));
         }
-        public static async Task<Item> ParseMessage(DSharpPlus.Entities.DiscordMessage M, List<string> roles, List<string> roles_replace, string title_default) {
+        public static async Task<Item> ParseMessage(DSharpPlus.Entities.DiscordMessage M, List<string> roles, List<string> roles_replace, List<bool> trim_roles, string title_default) {
             var attachements = (M.Attachments.Count > 0); var time = M.Timestamp; title_default = title_default.Trim() + " ";
-            var message = FormatTimestamps(RemoveRoles(M.Content, roles, roles_replace)) + "\n\n By:" + M.Author!.Username;
+            var message = FormatTimestamps(RemoveRoles(M.Content, roles, roles_replace, trim_roles)) + "\n\n By:" + M.Author!.Username;
             Item Message = new() {
-                Title = await SetTitle(message, attachements, time, roles, roles_replace, title_default),
+                Title = await SetTitle(message, attachements, time, roles, roles_replace, trim_roles, title_default),
                 Description = await SetDescription(message, attachements),
                 Author = M.Author!.Username,
                 Media = [],
@@ -33,9 +34,9 @@ namespace Formatting {
             return message;
         }
 
-        private static async Task<string> SetTitle (string message, bool attachements, DateTimeOffset time_offset, List<string> roles, List<string> roles_replace, string title_default) {
+        private static async Task<string> SetTitle (string message, bool attachements, DateTimeOffset time_offset, List<string> roles, List<string> roles_replace, List<bool> trim_roles, string title_default) {
             Console.WriteLine("Setting the title of the item.");
-            var CleanMessage = FormatLikeXML(RemoveRoles(message, roles, roles_replace), true);
+            var CleanMessage = FormatLikeXML(RemoveRoles(message, roles, roles_replace, trim_roles), true);
             var FirstLine = SplitOnWhitespace(CleanMessage, 2, 0, '\n');
             if (message.Length < 100 && attachements && !message.Contains('\n'))
                 return CleanMessage;
@@ -48,15 +49,17 @@ namespace Formatting {
             else return String.Concat(title_default, time_offset.DateTime.ToUniversalTime(), " UTC");
         }
 
-        private static string RemoveRoles(string message, List<string> roles, List<string> roles_replace) {
+        private static string RemoveRoles(string message, List<string> roles, List<string> roles_replace, List<bool> trim_roles) {
             Console.WriteLine("Removing Discord roles from the string.");
             foreach (string role in roles) {
-                if (message.StartsWith(role, StringComparison.Ordinal)) {
-                    Console.Write($"Message begins with '{role}', trimming: ");
-                    message = message.Remove(0, role.Length);
-                    message = message.TrimStart();
-                    Console.WriteLine(message);
-                };
+                if (trim_roles[roles.IndexOf(role)]){
+                    if (message.StartsWith(role, StringComparison.Ordinal)) {
+                        Console.Write($"Message begins with '{role}', trimming: ");
+                        message = message.Remove(0, role.Length);
+                        message = message.TrimStart();
+                        Console.WriteLine(message);
+                    };
+                }
                 message = message.Replace(role, roles_replace[roles.IndexOf(role)]);
             }
             return message;
@@ -166,6 +169,17 @@ namespace Formatting {
 
         public string Replace(string Message) {
             return Regex.Replace(Message, Pattern, Onset + Replacement + Coda);
+        }
+    }
+
+    public class Markup {
+        public static async Task<string> Format(string Description, string Title, string Author) {
+            string Message = "# " + Title + "\n";
+            return Message + Reformat(Description);
+        }
+
+        private static string Reformat(string Message) {
+            return Message.Replace("<u>", "__").Replace("</u>", "__").Replace("<b>", "**").Replace("</b>", "**").Replace("<i>", "*").Replace("</i>", "*").Replace("<s>", "~~").Replace("</s>", "~~").Replace("<code>", "`").Replace("</code>", "`").Replace("\n<br>", "\n");
         }
     }
 }
