@@ -9,7 +9,7 @@ namespace RSS{
     public class XML
     {
         private static bool InWriting { get; set; }
-        public static string FilePath { get; set; }
+        public static string? FilePath { get; set; }
         public static async void UpdateFile(object sender, FileSystemEventArgs e) {
             if (Program.RelayingRSS)
                 return;
@@ -21,10 +21,17 @@ namespace RSS{
 
             Console.WriteLine("RSS feed updated! Reading changes.");
             XmlSerializer serialiser = new(typeof(RSS));
-            using FileStream filestream = new(FilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-            if (filestream.Position > 0)
+            using FileStream filestream = new(FilePath!, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            if (filestream.Position > 0)    // XML.FilePath is set on line 85 in Program.cs, e.g. before FileSystemWatcher is initialised
                     filestream.Position = 0;
-            var rss = (RSS)serialiser.Deserialize(filestream)!;
+
+            var rss = new RSS();
+            try {
+                rss = (RSS)serialiser.Deserialize(filestream)!; // There ought to be a file stream if the file was updated, right?
+            } catch {
+                Console.WriteLine("Failed to load the feed. Any update to the file will be skipped.");
+                return;
+            }
 
             if (rss.Channel == null || rss.Channel.Items == null)
                 return;
@@ -42,9 +49,9 @@ namespace RSS{
                     });
                 }
             }
-            DiscordChannel Channel = await Program.Client.GetChannelAsync(Program.ChannelID);
+            DiscordChannel Channel = await Program.Client!.GetChannelAsync(Program.ChannelID);  // Client is built before connecting to Discord :/
             var Message = new DiscordMessageBuilder()
-                .WithContent(await Markup.Format(Item.Description, Item.Title, Item.Author));
+                .WithContent(Markup.Format(Item.Description, Item.Title, Item.Author));
             foreach (var Embed in Embeds)
                 Message.AddEmbed(Embed);
             await Message.SendAsync(Channel);
@@ -54,8 +61,8 @@ namespace RSS{
         public static async Task PutDown(RSS rss) {
             InWriting = true;
             XmlSerializer serializer = new(typeof(RSS));
-            using FileStream fileStream = new(FilePath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite);
-            serializer.Serialize(fileStream, rss);
+            using FileStream fileStream = new(FilePath!, FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite);
+            serializer.Serialize(fileStream, rss);  // XML.FilePath is assigned before writing to the file
             await fileStream.FlushAsync();
             await Task.Delay(500);
             InWriting = false;
@@ -70,8 +77,8 @@ namespace RSS{
                 try {
                     Console.WriteLine(" Deserialising the XML!");
                     var rss = (RSS)serialiser.Deserialize(filestream)!;
-                    if (rss.Version != version || rss.Channel.Title != title || rss.Channel.Link != link || rss.Channel.Description != description)
-                        return (preferConfig) ? AssignRSS(version, title, link, description) : rss;
+                    if (rss.Version != version || rss.Channel!.Title != title || rss.Channel.Link != link || rss.Channel.Description != description)
+                        return (preferConfig) ? AssignRSS(version, title, link, description) : rss;     // If 'Channel' isn't there, we catch it
                     return rss;
                 } catch {
                     Console.WriteLine("Error: Failed to read file!");
@@ -133,7 +140,7 @@ namespace RSS{
         public required string Title { get; set; }
 
         [XmlElement("link", Order = 2)]
-        public string Link { get; set; }
+        public string? Link { get; set; }
 
         [XmlElement("author", Order = 3)]
         public required string Author { get; set; }

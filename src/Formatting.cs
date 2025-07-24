@@ -4,17 +4,17 @@ using RSS;
 
 namespace Formatting {
     public class Discord {
-        public static async Task<string> AddMessage(DSharpPlus.Entities.DiscordMessage M, List<string> roles, List<string> roles_replace, List<bool> trim_roles) {
+        public static string AddMessage(DSharpPlus.Entities.DiscordMessage M, List<string> roles, List<string> roles_replace, List<bool> trim_roles) {
             var Message = FormatTimestamps(RemoveRoles(M.Content, roles, roles_replace, trim_roles)) + "\n\n By: " + M.Author!.Username;
-            return await SetDescription(Message, (M.Attachments.Count > 0));
+            return SetDescription(Message, (M.Attachments.Count > 0));        // I'm fairly certain that we won't get an authorless message
         }
 
         public static async Task<Item> ParseMessage(DSharpPlus.Entities.DiscordMessage M, List<string> roles, List<string> roles_replace, List<bool> trim_roles, string title_default) {
             var attachements = (M.Attachments.Count > 0); var time = M.Timestamp; title_default = title_default.Trim() + " ";
-            var message = FormatTimestamps(RemoveRoles(M.Content, roles, roles_replace, trim_roles)) + "\n\n By: " + M.Author!.Username;
+            var message = FormatTimestamps(RemoveRoles(M.Content, roles, roles_replace, trim_roles)) + "\n\n By: " + M.Author!.Username; // Same here
             Item Message = new() {
-                Title = await SetTitle(message, attachements, time, roles, roles_replace, trim_roles, title_default),
-                Description = await SetDescription(message, attachements),
+                Title = await Task.Run(() => SetTitle(message, attachements, time, roles, roles_replace, trim_roles, title_default)),
+                Description = await Task.Run(() => SetDescription(message, attachements)),
                 Author = M.Author!.Username,
                 Media = [],
                 Origin = "Discord"
@@ -23,7 +23,7 @@ namespace Formatting {
             return Message;
         }
 
-        private static async Task<string> SetDescription (string message, bool attachements) {
+        private static string SetDescription (string message, bool attachements) {
             Console.WriteLine("Setting the description of the message.");
             if (message.Length < 100 && attachements && !message.Contains('\n'))
                 return "";
@@ -36,7 +36,7 @@ namespace Formatting {
             return message;
         }
 
-        private static async Task<string> SetTitle (string message, bool attachements, DateTimeOffset time_offset, List<string> roles, List<string> roles_replace, List<bool> trim_roles, string title_default) {
+        private static string SetTitle (string message, bool attachements, DateTimeOffset time_offset, List<string> roles, List<string> roles_replace, List<bool> trim_roles, string title_default) {
             Console.WriteLine("Setting the title of the item.");
             var CleanMessage = FormatLikeXML(RemoveRoles(message, roles, roles_replace, trim_roles), true);
             CleanMessage = String.Concat(CleanMessage[0].ToString().ToUpper(), CleanMessage[1..]);
@@ -174,9 +174,10 @@ namespace Formatting {
     }
 
     public class Markup {
-        public static async Task<string> Format(string Description, string Title, string Author) {
-            string Message = "# " + Title + "\n";
-            return Message + Reformat(Description);
+        public static string Format(string Description, string Title, string Author) {
+            string Header = "# " + Title + "\n";
+            string Body = Reformat(Description);
+            return String.Concat(Header, Body, "\nBy: ", Author);
         }
 
         private static string Reformat(string Message) {
