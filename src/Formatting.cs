@@ -5,12 +5,13 @@ using RSS;
 namespace Formatting {
     public class Discord {
         public static async Task<string> AddMessage(DSharpPlus.Entities.DiscordMessage M, List<string> roles, List<string> roles_replace, List<bool> trim_roles) {
-            var Message = FormatTimestamps(RemoveRoles(M.Content, roles, roles_replace, trim_roles)) + "\n\n By:" + M.Author!.Username;
+            var Message = FormatTimestamps(RemoveRoles(M.Content, roles, roles_replace, trim_roles)) + "\n\n By: " + M.Author!.Username;
             return await SetDescription(Message, (M.Attachments.Count > 0));
         }
+
         public static async Task<Item> ParseMessage(DSharpPlus.Entities.DiscordMessage M, List<string> roles, List<string> roles_replace, List<bool> trim_roles, string title_default) {
             var attachements = (M.Attachments.Count > 0); var time = M.Timestamp; title_default = title_default.Trim() + " ";
-            var message = FormatTimestamps(RemoveRoles(M.Content, roles, roles_replace, trim_roles)) + "\n\n By:" + M.Author!.Username;
+            var message = FormatTimestamps(RemoveRoles(M.Content, roles, roles_replace, trim_roles)) + "\n\n By: " + M.Author!.Username;
             Item Message = new() {
                 Title = await SetTitle(message, attachements, time, roles, roles_replace, trim_roles, title_default),
                 Description = await SetDescription(message, attachements),
@@ -31,21 +32,23 @@ namespace Formatting {
                 lines[i] = (lines[i].StartsWith('#')) ? SplitOnWhitespace(lines[i], 2, 1, ' ') : lines[i];  // Couldn't use a foreach loop neatly
             }
             message = FormatLikeXML(String.Join("\n", lines), false);
+            message = String.Concat(message[0].ToString().ToUpper(), message[1..]);
             return message;
         }
 
         private static async Task<string> SetTitle (string message, bool attachements, DateTimeOffset time_offset, List<string> roles, List<string> roles_replace, List<bool> trim_roles, string title_default) {
             Console.WriteLine("Setting the title of the item.");
             var CleanMessage = FormatLikeXML(RemoveRoles(message, roles, roles_replace, trim_roles), true);
-            var FirstLine = SplitOnWhitespace(CleanMessage, 2, 0, '\n');
+            CleanMessage = String.Concat(CleanMessage[0].ToString().ToUpper(), CleanMessage[1..]);
+            var FirstLine = CleanMessage.Split('\n')[0];
+            if (FirstLine.Contains('#'))
+                FirstLine = FirstLine.Replace('#', ' ');
             if (message.Length < 100 && attachements && !message.Contains('\n'))
-                return CleanMessage;
+                return CleanMessage.Trim();
             else if (message.Length < 150 && message.Contains('\n'))
-                return FirstLine;
-            else if (message.StartsWith('#'))
-                return (message.EndsWith('#')) ? SplitOnWhitespace(SplitOnWhitespace(FirstLine, 2, 1, ' '), -1, ^1, ' ') : SplitOnWhitespace(FirstLine, 2, 1, ' ');
+                return FirstLine.Trim();
             else if (FirstLine.Length < 150)
-                return FirstLine;
+                return FirstLine.Trim();
             else return String.Concat(title_default, time_offset.DateTime.ToUniversalTime(), " UTC");
         }
 
@@ -53,6 +56,7 @@ namespace Formatting {
             Console.WriteLine("Removing Discord roles from the string.");
             foreach (string role in roles) {
                 if (trim_roles[roles.IndexOf(role)]){
+                    Console.WriteLine("Trimming for {0} is enabled.", role);
                     if (message.StartsWith(role, StringComparison.Ordinal)) {
                         Console.Write($"Message begins with '{role}', trimming: ");
                         message = message.Remove(0, role.Length);
@@ -78,10 +82,7 @@ namespace Formatting {
 
         private static string SplitOnWhitespace (string message, int parts, Index part, char space) {
             Console.WriteLine($"Splitting the string! Parts: {parts}, chosing №{part}.");
-            if (parts == -1)
-                return message.Split(space, StringSplitOptions.TrimEntries)[part];
-            else
-                return message.Split(space, parts, StringSplitOptions.TrimEntries)[part];
+            return message.Split(space, parts, StringSplitOptions.TrimEntries)[part];
         }
 
         private static string FormatLikeXML (string Message, bool RemoveFormatting) {
