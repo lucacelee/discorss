@@ -26,21 +26,21 @@ media_folder = "media"
 rss_feed_file = "feed.xml"
 ```
 In the sample config, you will find quite a diverse selection of nodes. We will go through each element and focus on the less intuitive ones.
-##### Discord
+#### Discord
 * `token` is your Discord bot token. How to get one is explained in the [next section](#obtaining-the-discord-token).
 * `channel` is the ID of the channel you want to mirror. You can get it by right-clicking the channel in Discord, and selecting 'Copy Channel ID' at the bottom
 * `roles` is a list of all of the roles you wish to manipulate. Except for `@everyone` and `@here`, for every role you must get its role ID. You can do that by right-clicking the role in somebody's profile. All roles must follow this format: `<@&numbers>`, where 'numbers' are replaced with the ID. Example: `<@&1111111111111111111>`
 * `inline_roles` is how you would like to represent the role when in text. For example: `@everyone` will turn to `everyone` when inside of a text block. This is done, so that the flow of text is more natural
 * `trim_roles` is a list of booleans, stating whether you want the role to be trimmed off the beginning of a message, if it is found there
 * `linking_time` is the time in __seconds__, for which if the message is sent within that timespan from another, it will be added onto the end of the previous one. Or, to put it simply, if a second message is sent within that timeframe after the first, they become one
-##### RSS
+#### RSS
 * `title` the title of your feed
 * `description` the description of your feed
 * `link` the link to the **folder** in which your feed file is located. This is specifically **the folder**, so that any downloaded files have a proper destination and as a result, URL. This is the **website** link, e.g. `https://example.com/rss/`
 * `default` is the string that will be followed by the date and time in UTC and used as an RSS item's title, if one cannot be extracted from the message
 * `rss_version` is self explanatory. This *will not* change how the file is structured, so you probably shouldn't change it
 * `prefer_config` is a boolean. If your config and your feed's title, link and description don't match, one is chosen based on this parameter
-##### Local
+#### Local
 * `media_folder` is the path to the folder, where all of your media is downloaded, which is mainly images
 * `rss_feed_file` is the most important (along with `token`) one: it is the file path to your RSS feed
 **Important:** every single filed in the config *must be filled out*, otherwise something will probably misfunction. **Also**, for the roles parameters: each one must match the one above/below it, as there is no way to mark which one corresponds to which otherwise.
