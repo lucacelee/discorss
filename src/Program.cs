@@ -74,7 +74,7 @@ class Program {
 
             (roles, roles_replace, trim_roles) = GetRoles(roles, roles_replace, trim_roles, (TomlArray)table["Discord"]["roles"], (TomlArray)table["Discord"]["inline_roles"], (TomlArray)table["Discord"]["trim_roles"]);
         } catch (Exception ex) {
-            Console.WriteLine($"Error: unable to find the config file. {ex}");
+            Console.WriteLine($"Error: unable to find the config file. {ex.Message}");
             return;     // I said 'THOU SHALT NOT PASS' and not pass hast thou indeed
         }
 
