@@ -46,13 +46,21 @@ In the sample config, you will find quite a diverse selection of nodes. We will 
 **Important:** every single filed in the config *must be filled out*, otherwise something will probably misfunction. **Also**, for the roles parameters: each one must match the one above/below it, as there is no way to mark which one corresponds to which otherwise.
 ### Obtaining the Discord Token
 Before you can even think of getting a token, you first need to make sure you have a Discord account. If you do, that's great and we can proceed. Go to [the Discord applications portal](https://discord.com/developers/applications/), and click the big purple "New Application" button.
+
 ![The button is in the top-right](assets/create.png)
+
 Then give it some creative name, set up its avatar image, etc. Then, after you are done, go into the 'Bot' section, where you will find a "Reset Token" button.
+
 ![Right under the 'Build-A-Bot' section](assets/token.png)
+
 Once you obtain your token, put it into the config and/or put it in a safe place, because who knows what someone evil will do with your innocent little announcement bot. **However**, this is not it yet. The next thing you must do is scroll down and check the 'Message Content Intent', because if you don't, your bot <ins>won't be able to read messages</ins>.
+
 ![It's the very bottom toggle, right above the permission calculator](assets/privilages.png)
+
 Now you want to add your bot to your server. Please go into the 'OAuth2' tab, where you will find the URL generator. There, select "bot", because you are adding a bot. A new window full of checkboxes will appear below. There in 'Text Permissions' select "Send Messages" and "Read Message History". You do want your bot to send you RSS feed updates, right?
-!["bot" is the rightmost column](assets/oauthbot.png)
+
+!["bot" is the rightmost column](assets/oauth2bot.png)
+
 Finally, click 'Copy' next to the generated link and paste it into your web browser. If will open Discord and prompt you about which server to add your bot to. You can figure the rest yourself.
 ### RSS Feed
 If you don't have an existing RSS feed, you don't need to worry. The program will generate one if it isn't present, yet you still **must include a file path** to where is is supposed to be in your config. Make sure that your feed is accessible through a URL, e.g. it is on the internet, and test it out with an RSS reader. I would recommend running this program on the same server, that you are hosting your feed, to reduce any possible latency and ensure that the updates are intact.
@@ -61,6 +69,11 @@ You have two options when it comes to running the program:
 1. Use the framework independant binary, that is provided in the 'Releases' section; or
 2. Clone the repository and use `dotnet run` from the terminal when in the project folder
 For the second option, and in order to build the app, you will need to have **.NET 9 SDK** installed on your system, which you can find at [Microsoft's website](https://dotnet.microsoft.com/en-us/download).
+``` bash
+git clone https://github.com/lucacelee/discorss.git
+cd discorss
+dotnet run
+```
 ## Building from source
 To build the app, you need, as I mentioned in the previous section, the **.NET 9 SDK** installed on your system, which you can find at [Microsoft's website](https://dotnet.microsoft.com/en-us/download). Once you have ensured you have that by either installing, or using `dotnet --version` in your terminal.
 To begin with, clone the repository with Git, then `cd` into it and run `dotnet publish` to create a framework-dependant binary, or `dotnet publish --self-contained` to create a binary, that can be used without .NET installed on one's system.

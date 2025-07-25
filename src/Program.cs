@@ -25,25 +25,27 @@ class Program {
             configdir = "config.toml";
         } else if (args[0] == "--help" || args[0] == "-h") {    // Thanks to http://patorjk.com/software/taag/ for the fun ASCII art!
             Console.Write(@"
-       ░██ ░██                                                                
-       ░██                                                                    
- ░████████ ░██ ░███████   ░███████   ░███████  ░██░████  ░███████   ░███████  
-░██    ░██ ░██░██        ░██    ░██ ░██    ░██ ░███     ░██        ░██        
-░██    ░██ ░██ ░███████  ░██        ░██    ░██ ░██       ░███████   ░███████  
-░██   ░███ ░██       ░██ ░██    ░██ ░██    ░██ ░██             ░██        ░██ 
- ░█████░██ ░██ ░███████   ░███████   ░███████  ░██       ░███████   ░███████  
-                                                                             
-           A simple tool to link a Discord channel and an RSS feed.
+               ░██ ░██                                                                
+               ░██                                                                    
+         ░████████ ░██ ░███████   ░███████   ░███████  ░██░████  ░███████   ░███████  
+        ░██    ░██ ░██░██        ░██    ░██ ░██    ░██ ░███     ░██        ░██        
+        ░██    ░██ ░██ ░███████  ░██        ░██    ░██ ░██       ░███████   ░███████  
+        ░██   ░███ ░██       ░██ ░██    ░██ ░██    ░██ ░██             ░██        ░██ 
+         ░█████░██ ░██ ░███████   ░███████   ░███████  ░██       ░███████   ░███████ 
+                                                                                     
+                   A simple tool to link a Discord channel and an RSS feed.
+        
+                   Use: $ discross (-h | --help) [config file path]
+                             -h | --help  —  display this message and exit.
+                             [config]     —  file path to your config file;
+                                             it must be a .toml file.
+                    If not specified, the app looks in its directory for a
+                    'config.toml'. If that isn't present either, exit.
+        
+                    The RSS feed file is specified in the config. If empty,
+                    the program exists with a message, asking to specify it
 
-           Use: $ discross (-h | --help) [config file path]
-                     -h | --help  —  display this message and exit.
-                     [config]     —  file path to your config file;
-                                     it must be a .toml file.
-            If not specified, the app looks in its directory for a
-            'config.toml'. If that isn't present either, exit.
-
-            The RSS feed file is specified in the config. If empty,
-            the program exists with a message, asking to specify it
+                        discorss 1.0
                                         
 ");
             return;                         // This is the help message you get when using the '-h' or '--help' argument
