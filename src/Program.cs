@@ -112,9 +112,15 @@ class Program {
                 if (!RelayingRSS) {
                     if (e.Channel.Id == ChannelID) {
                         Console.WriteLine($"Message received: «{e.Message.Content}»");
+                        var MD = new Markdown (e.Message) {
+                            Roles = Roles,
+                            RolesReplace = RolesReplace,
+                            TrimRoles = TrimRoles,
+                            DefaultTitle = table["RSS"]["default"]
+                        };
                         if (!Linking) {
                             SetTimer(LinkingTime); Linking = true;
-                            Item Message = await Markdown.ParseMessage(e.Message, Roles, RolesReplace, TrimRoles, table["RSS"]["default"]);
+                            Item Message = await MD.ParseMessage();
                             var attachements = new List<Enclosure>();
                             await DownloadAttachements(http, e, attachements, MediaFolder, Link);
                             Message.Media = attachements;
@@ -123,7 +129,7 @@ class Program {
                             StopTimer(); SetTimer(LinkingTime);
                             Console.WriteLine("Adding this message to the previous post.");
                             await DownloadAttachements(http, e, Feed.Channel.Items[0].Media, MediaFolder, Link);
-                            Feed.Channel.Items[0].Description = String.Concat(Feed.Channel.Items[0].Description, "<br>\n<br>\n", await Task.Run(() => Markdown.AddMessage(e.Message, Roles, RolesReplace, TrimRoles)));
+                            Feed.Channel.Items[0].Description = String.Concat(Feed.Channel.Items[0].Description, "<br>\n<br>\n", await Task.Run(() => MD.AddMessage()));
                         }
                         await XMLFile.PutDown(Feed);
                     }

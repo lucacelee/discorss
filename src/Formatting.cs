@@ -3,71 +3,75 @@ using System.Text.RegularExpressions;
 using RSS;
 
 namespace Formatting {
-    public class Markdown {
-        public static string AddMessage(DSharpPlus.Entities.DiscordMessage M, List<string> roles, List<string> roles_replace, List<bool> trim_roles) {
-            var Message = FormatTimestamps(RemoveRoles(M.Content, roles, roles_replace, trim_roles)) + "\n\n By: " + M.Author!.Username;
-            return SetDescription(Message, (M.Attachments.Count > 0));        // I'm fairly certain that we won't get an authorless message
+    public class Markdown(DSharpPlus.Entities.DiscordMessage M)
+    {
+        public required List<string> Roles { get; set; }
+        public required List<string> RolesReplace { get; set; }
+        public required List<bool> TrimRoles { get; set; }
+        public required string DefaultTitle { get; set; }
+        private bool Attachments { get; set; }
+        private string Message = M!.Content;
+
+        public string AddMessage() {
+            Message = FormatTimestamps(RemoveRoles()) + "\n\n By: " + M.Author!.Username;
+            return SetDescription();                             // I'm fairly certain that we won't get an authorless message
         }
 
-        public static async Task<Item> ParseMessage(DSharpPlus.Entities.DiscordMessage M, List<string> roles, List<string> roles_replace, List<bool> trim_roles, string title_default) {
-            var attachements = (M.Attachments.Count > 0); var time = M.Timestamp; title_default = title_default.Trim() + " ";
-            var message = FormatTimestamps(RemoveRoles(M.Content, roles, roles_replace, trim_roles)) + "\n\n By: " + M.Author!.Username; // Same here
-            Item Message = new() {
-                Title = await Task.Run(() => SetTitle(message, attachements, time, roles, roles_replace, trim_roles, title_default)),
-                Description = await Task.Run(() => SetDescription(message, attachements)),
+        public async Task<Item> ParseMessage() {
+            Attachments = (M.Attachments.Count > 0); var Time = M.Timestamp; DefaultTitle = DefaultTitle.Trim() + " ";
+            Message = FormatTimestamps(RemoveRoles()) + "\n\n By: " + M.Author!.Username; // Same here
+            Item Entry = new() {
+                Title = await Task.Run(() => SetTitle(Time)),
+                Description = await Task.Run(() => SetDescription()),
                 Author = M.Author!.Username,
                 Media = [],
                 Origin = "Discord",
-                Timestamp = M.Timestamp.ToUnixTimeSeconds()
+                Timestamp = Time.ToUnixTimeSeconds()
             };
-            Console.WriteLine($"The result of parsing the item.\nTitle: {Message.Title}, author: {Message.Author}, Description:\n'{Message.Description}'");
+            Console.WriteLine($"The result of parsing the item.\nTitle: {Entry.Title}, author: {Entry.Author}, Description:\n'{Entry.Description}'");
+            return Entry;
+        }
+
+        private string SetDescription () {
+            Console.WriteLine("Setting the description of the message.");
+            if (Message.Length < 100 && Attachments && !Message.Contains('\n'))
+                return "";
+            Message = FormatLikeXML(Message, false);
+            Message = String.Concat(Message[0].ToString().ToUpper(), Message[1..]);
             return Message;
         }
 
-        private static string SetDescription (string message, bool attachements) {
-            Console.WriteLine("Setting the description of the message.");
-            if (message.Length < 100 && attachements && !message.Contains('\n'))
-                return "";
-            string[] lines = message.Split('\n');       // Removing all of the possible leading hashtags from the Discord message
-            for (int i = 0; i < lines.Length; i++) {
-                lines[i] = (lines[i].StartsWith('#')) ? SplitOnWhitespace(lines[i], 2, 1, ' ') : lines[i];  // Couldn't use a foreach loop neatly
-            }
-            message = FormatLikeXML(String.Join("\n", lines), false);
-            message = String.Concat(message[0].ToString().ToUpper(), message[1..]);
-            return message;
-        }
-
-        private static string SetTitle (string message, bool attachements, DateTimeOffset time_offset, List<string> roles, List<string> roles_replace, List<bool> trim_roles, string title_default) {
+        private string SetTitle (DateTimeOffset time_offset) {
             Console.WriteLine("Setting the title of the item.");
-            var CleanMessage = FormatLikeXML(RemoveRoles(message, roles, roles_replace, trim_roles), true);
+            var CleanMessage = FormatLikeXML(RemoveRoles(), true);
             CleanMessage = String.Concat(CleanMessage[0].ToString().ToUpper(), CleanMessage[1..]);
             var FirstLine = CleanMessage.Split('\n')[0];
             if (FirstLine.Contains('#'))
                 FirstLine = FirstLine.Replace('#', ' ');
-            if (message.Length < 100 && attachements && !message.Contains('\n'))
+            if (CleanMessage.Length < 100 && Attachments && !CleanMessage.Contains('\n'))
                 return CleanMessage.Trim();
-            else if (message.Length < 150 && message.Contains('\n'))
+            else if (CleanMessage.Length < 150 && Message.Contains('\n'))
                 return FirstLine.Trim();
             else if (FirstLine.Length < 150)
                 return FirstLine.Trim();
-            else return String.Concat(title_default, time_offset.DateTime.ToUniversalTime(), " UTC");
+            else return String.Concat(DefaultTitle, time_offset.DateTime.ToUniversalTime(), " UTC");
         }
 
-        private static string RemoveRoles(string message, List<string> roles, List<string> roles_replace, List<bool> trim_roles) {
+        private string RemoveRoles() {
             Console.WriteLine("Removing Discord roles from the string.");
-            foreach (string role in roles) {
-                if (trim_roles[roles.IndexOf(role)]){
-                    Console.WriteLine("Trimming for {0} is enabled.", role);
-                    if (message.StartsWith(role, StringComparison.Ordinal)) {
-                        Console.Write($"Message begins with '{role}', trimming: ");
-                        message = message.Remove(0, role.Length);
-                        message = message.TrimStart();
-                        Console.WriteLine(message);
+            foreach (string Role in Roles) {
+                if (TrimRoles[Roles.IndexOf(Role)]){
+                    Console.WriteLine("Trimming for {0} is enabled.", Role);
+                    if (Message.StartsWith(Role, StringComparison.Ordinal)) {
+                        Console.Write($"Message begins with '{Role}', trimming: ");
+                        Message = Message.Remove(0, Role.Length);
+                        Message = Message.TrimStart();
+                        Console.WriteLine(Message);
                     };
                 }
-                message = message.Replace(role, roles_replace[roles.IndexOf(role)]);
+                Message = Message.Replace(Role, RolesReplace[Roles.IndexOf(Role)]);
             }
-            return message;
+            return Message;
         }
 
         private static string FormatTimestamps (string Message) {
@@ -79,11 +83,6 @@ namespace Formatting {
                 Message = Regex.Replace(Message, Timestamp, " " + Time + " UTC ");
             }
             return Message;
-        }
-
-        private static string SplitOnWhitespace (string message, int parts, Index part, char space) {
-            Console.WriteLine($"Splitting the string! Parts: {parts}, chosing №{part}.");
-            return message.Split(space, parts, StringSplitOptions.TrimEntries)[part];
         }
 
         private static string FormatLikeXML (string Message, bool RemoveFormatting) {
@@ -98,24 +97,26 @@ namespace Formatting {
             Message = (!RemoveFormatting) ? Message.Replace("\n", "\n<br>") : Message;
 
             List<Text> Strings = [];
-             Strings.Add(new Text {
-                Pattern = @"(#)(?<Body>.+)\n",
-                Onset = h1Onset,
-                Coda = h1Coda,
-                Replacement = @"${Body}"
-            });
-             Strings.Add(new Text {
-                Pattern = @"(#){2}(?<Body>.+)\n",
-                Onset = h2Onset,
-                Coda = h2Coda,
-                Replacement = @"${Body}"
-            });
-             Strings.Add(new Text {
-                Pattern = @"(#){3}(?<Body>.+)\n",
-                Onset = h3Onset,
-                Coda = h3Coda,
-                Replacement = @"${Body}"
-            });
+            if (!RemoveFormatting){
+                Strings.Add(new Text {
+                    Pattern = @"(#){3}(?<Body>.+)\n",
+                    Onset = h3Onset,
+                    Coda = h3Coda + '\n',
+                    Replacement = @"${Body}"
+                });
+                Strings.Add(new Text {
+                    Pattern = @"(#){2}(?<Body>.+)\n",
+                    Onset = h2Onset,
+                    Coda = h2Coda + '\n',
+                    Replacement = @"${Body}"
+                });
+                Strings.Add(new Text {
+                    Pattern = @"(#)(?<Body>.+)\n",
+                    Onset = h1Onset,
+                    Coda = h1Coda + '\n',
+                    Replacement = @"${Body}"
+                });
+            }
             Strings.Add(new Text {
                 Pattern = @"(_){2}(?<Body>.+)(_){2}",
                 Onset = uOnset,
