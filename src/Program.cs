@@ -107,7 +107,7 @@ class Program {
                         Console.WriteLine($"Message received: «{e.Message.Content}»");
                         if (!Linking) {
                             SetTimer(linking_time); Linking = true;
-                            Item Message = await Discord.ParseMessage(e.Message, roles, roles_replace, trim_roles, table["RSS"]["default"]);
+                            Item Message = await Markdown.ParseMessage(e.Message, roles, roles_replace, trim_roles, table["RSS"]["default"]);
                             var attachements = new List<Enclosure>();
                             await DownloadAttachements(http, e, attachements, media_folder, Link);
                             Message.Media = attachements;
@@ -116,7 +116,7 @@ class Program {
                             StopTimer(); SetTimer(linking_time);
                             Console.WriteLine("Adding this message to the previous post.");
                             await DownloadAttachements(http, e, Feed.Channel.Items[0].Media, media_folder, Link);
-                            Feed.Channel.Items[0].Description = String.Concat(Feed.Channel.Items[0].Description, "<br>\n<br>\n", await Task.Run(() => Discord.AddMessage(e.Message, roles, roles_replace, trim_roles)));
+                            Feed.Channel.Items[0].Description = String.Concat(Feed.Channel.Items[0].Description, "<br>\n<br>\n", await Task.Run(() => Markdown.AddMessage(e.Message, roles, roles_replace, trim_roles)));
                         }
                         await XML.PutDown(Feed);
                     }

@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 using RSS;
 
 namespace Formatting {
-    public class Discord {
+    public class Markdown {
         public static string AddMessage(DSharpPlus.Entities.DiscordMessage M, List<string> roles, List<string> roles_replace, List<bool> trim_roles) {
             var Message = FormatTimestamps(RemoveRoles(M.Content, roles, roles_replace, trim_roles)) + "\n\n By: " + M.Author!.Username;
             return SetDescription(Message, (M.Attachments.Count > 0));        // I'm fairly certain that we won't get an authorless message
@@ -17,7 +17,8 @@ namespace Formatting {
                 Description = await Task.Run(() => SetDescription(message, attachements)),
                 Author = M.Author!.Username,
                 Media = [],
-                Origin = "Discord"
+                Origin = "Discord",
+                Timestamp = M.Timestamp.ToUnixTimeSeconds()
             };
             Console.WriteLine($"The result of parsing the item.\nTitle: {Message.Title}, author: {Message.Author}, Description:\n'{Message.Description}'");
             return Message;
@@ -75,7 +76,7 @@ namespace Formatting {
             foreach (Match T in Regex.Matches(Message, Timestamp)) {
                 string Time = DateTimeOffset.FromUnixTimeSeconds((long)Decimal.Parse(T.Result(@"${Digits}"))).ToUniversalTime().DateTime.ToString();
                 Console.WriteLine("Time: {0}", Time);
-                Message = Regex.Replace(Message, Timestamp, " " + Time + " UTC");
+                Message = Regex.Replace(Message, Timestamp, " " + Time + " UTC ");
             }
             return Message;
         }
@@ -86,16 +87,35 @@ namespace Formatting {
         }
 
         private static string FormatLikeXML (string Message, bool RemoveFormatting) {
-            string uOnset, uCoda, sOnset, sCoda, cOnset, cCoda, iOnset, iCoda, bOnset, bCoda, jOnset, jCoda;
+            string uOnset, uCoda, sOnset, sCoda, cOnset, cCoda, iOnset, iCoda, bOnset, bCoda, jOnset, jCoda, h1Onset, h1Coda, h2Onset, h2Coda, h3Onset, h3Coda;
             uOnset = @"<u>"; uCoda = @"</u>"; sOnset = @"<s>"; sCoda = @"</s>"; bOnset = @"<b>"; bCoda = @"</b>"; iOnset = @"<i>"; iCoda = @"</i>";
             cOnset = "<code>"; cCoda = @"</code>"; jOnset = jCoda = "";
+            h1Onset = "<h1>"; h1Coda = "</h1>"; h2Onset = "<h2>"; h2Coda = "</h2>"; h3Onset = "<h3>"; h3Coda = "</h3>";
 
             if (RemoveFormatting)
-                uOnset = uCoda = sOnset = sCoda = cOnset = cCoda = iOnset = iCoda = bOnset = bCoda = jOnset = jCoda = "";
+                uOnset = uCoda = sOnset = sCoda = cOnset = cCoda = iOnset = iCoda = bOnset = bCoda = jOnset = jCoda = h1Onset = h1Coda = h2Onset = h2Coda = h3Onset = h3Coda = "";
 
             Message = (!RemoveFormatting) ? Message.Replace("\n", "\n<br>") : Message;
 
             List<Text> Strings = [];
+             Strings.Add(new Text {
+                Pattern = @"(#)(?<Body>.+)\n",
+                Onset = h1Onset,
+                Coda = h1Coda,
+                Replacement = @"${Body}"
+            });
+             Strings.Add(new Text {
+                Pattern = @"(#){2}(?<Body>.+)\n",
+                Onset = h2Onset,
+                Coda = h2Coda,
+                Replacement = @"${Body}"
+            });
+             Strings.Add(new Text {
+                Pattern = @"(#){3}(?<Body>.+)\n",
+                Onset = h3Onset,
+                Coda = h3Coda,
+                Replacement = @"${Body}"
+            });
             Strings.Add(new Text {
                 Pattern = @"(_){2}(?<Body>.+)(_){2}",
                 Onset = uOnset,
