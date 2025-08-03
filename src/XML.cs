@@ -8,9 +8,14 @@ using Formatting;
 namespace RSS{
     public class XML
     {
-        private static bool InWriting { get; set; }
-        public static string? FilePath { get; set; }
-        public static async void UpdateFile(object sender, FileSystemEventArgs e) {
+        private bool InWriting { get; set; }
+        public string? FilePath { get; set; }
+        public required bool PreferConfig { get; set; }
+        public required string Version { get; set; }
+        public required string Title { get; set; }
+        public required string Link { get; set; }
+        public required string Description { get; set; }
+        public async void UpdateFile(object sender, FileSystemEventArgs e) {
             if (Program.RelayingRSS)
                 return;
             Console.WriteLine("File update received!");
@@ -58,7 +63,7 @@ namespace RSS{
             await Task.Delay(500);
             Program.RelayingRSS = false;
         }
-        public static async Task PutDown(RSS rss) {
+        public async Task PutDown(RSS rss) {
             InWriting = true;
             XmlSerializer serializer = new(typeof(RSS));
             using FileStream fileStream = new(FilePath!, FileMode.OpenOrCreate, FileAccess.Write, FileShare.ReadWrite);
@@ -67,7 +72,7 @@ namespace RSS{
             await Task.Delay(500);
             InWriting = false;
         }
-        public static RSS GiveBirth(bool preferConfig, string version, string title, string link, string description) {
+        public RSS GiveBirth() {
             if (File.Exists(FilePath)) {                                                // If file exists — deserialise; otherwise create new
                 Console.Write("Reading file...");
                 XmlSerializer serialiser = new(typeof(RSS));
@@ -77,30 +82,30 @@ namespace RSS{
                 try {
                     Console.WriteLine(" Deserialising the XML!");
                     var rss = (RSS)serialiser.Deserialize(filestream)!;
-                    if (rss.Version != version || rss.Channel!.Title != title || rss.Channel.Link != link || rss.Channel.Description != description)
-                        return (preferConfig) ? AssignRSS(version, title, link, description) : rss;     // If 'Channel' isn't there, we catch it
+                    if (rss.Version != Version || rss.Channel!.Title != Title || rss.Channel.Link != Link || rss.Channel.Description != Description)
+                        return (PreferConfig) ? AssignRSS() : rss;                      // If 'Channel' isn't there, we catch it
                     return rss;
                 } catch {
                     Console.WriteLine("Error: Failed to read file!");
                     Console.WriteLine("Creating new RSS configuration.");
-                    return AssignRSS(version, title, link, description);
+                    return AssignRSS();
                 }
             } else {
                 Console.WriteLine("File absent; creating new RSS configuration.");
-                return AssignRSS(version, title, link, description);
+                return AssignRSS();
             }
         }
 
-        private static RSS AssignRSS (string version, string title, string link, string description){
+        private RSS AssignRSS (){
             Console.WriteLine("Asigning new RSS data.");
             var Channel = new Channel {
-                Title = title,
-                Link = link,
-                Description = description,
+                Title = Title,
+                Link = Link,
+                Description = Description,
                 Items = []
             };
             var rss = new RSS {
-                Version = version,
+                Version = Version,
                 Channel = Channel
             };
             return rss;

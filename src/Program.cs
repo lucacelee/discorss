@@ -14,15 +14,15 @@ class Program {
     public static DiscordClient? Client;
     static async Task Main(string[] args) {
         // Console.WriteLine("Hello, World!");
-        string media_folder, token, configdir, rss, Link;
-        int linking_time;
-        List<string> roles = [];
-        List<string> roles_replace = [];
-        List<bool> trim_roles = [];             // These variables are all used later for the config
+        string MediaFolder, Token, ConfigDir, rss, Link;
+        int LinkingTime;
+        List<string> Roles = [];
+        List<string> RolesReplace = [];
+        List<bool> TrimRoles = [];             // These variables are all used later for the config
 
         if (args.Length == 0) {
             Console.WriteLine("No arguments are passed! Looking for 'config.toml' in the default directory!");
-            configdir = "config.toml";
+            ConfigDir = "config.toml";
         } else if (args[0] == "--help" || args[0] == "-h") {    // Thanks to http://patorjk.com/software/taag/ for the fun ASCII art!
             Console.Write(@"
                ░██ ░██                                                                
@@ -50,12 +50,12 @@ class Program {
 ");
             return;                         // This is the help message you get when using the '-h' or '--help' argument
         } else {
-            configdir = args[0];
+            ConfigDir = args[0];
         }
 
         TomlTable table;
         try {                               // Trying to read the file and catching the exception if it isn't there
-            using StreamReader reader = File.OpenText(configdir);
+            using StreamReader reader = File.OpenText(ConfigDir);
             try {
                 table = TOML.Parse(reader); // Here, attempting to parse it and catching the exception if there are errors in the file
             }                               // the way that the example did it: https://github.com/dezhidki/Tommy?tab=readme-ov-file#how-to-use
@@ -66,15 +66,15 @@ class Program {
                 foreach(TomlSyntaxException syntaxEx in ex.SyntaxErrors)
                     Console.WriteLine($"Error on {syntaxEx.Column}:{syntaxEx.Line}: {syntaxEx.Message}");
             }
-            token = table["Discord"]["token"];          // Linking the predefined variables with the information from config.toml
+            Token = table["Discord"]["token"];          // Linking the predefined variables with the information from config.toml
 
-            media_folder = table["Local"]["media_folder"];
+            MediaFolder = table["Local"]["media_folder"];
             rss = table["Local"]["rss_feed_file"];
             Link = table["RSS"]["link"];
 
-            linking_time = (int)Decimal.Parse(table["Discord"]["linking_time"]);
+            LinkingTime = (int)Decimal.Parse(table["Discord"]["linking_time"]);
 
-            (roles, roles_replace, trim_roles) = GetRoles(roles, roles_replace, trim_roles, (TomlArray)table["Discord"]["roles"], (TomlArray)table["Discord"]["inline_roles"], (TomlArray)table["Discord"]["trim_roles"]);
+            (Roles, RolesReplace, TrimRoles) = GetRoles(Roles, RolesReplace, TrimRoles, (TomlArray)table["Discord"]["roles"], (TomlArray)table["Discord"]["inline_roles"], (TomlArray)table["Discord"]["trim_roles"]);
         } catch (Exception ex) {
             Console.WriteLine($"Error: unable to find the config file. {ex.Message}");
             return;     // I said 'THOU SHALT NOT PASS' and not pass hast thou indeed
@@ -84,21 +84,28 @@ class Program {
             Console.WriteLine("You must specify the path to the RSS feed."); return;
         }
 
-        XML.FilePath = rss;
-        var Feed = XML.GiveBirth(table["RSS"]["prefer_config"], table["RSS"]["rss_version"], table["RSS"]["title"], Link, table["RSS"]["description"]);
+        var XMLFile = new XML{
+            FilePath = rss,
+            PreferConfig = table["RSS"]["prefer_config"],
+            Version = table["RSS"]["rss_version"],
+            Title = table["RSS"]["title"],
+            Link = Link,
+            Description = table["RSS"]["description"]
+        };
+        var Feed = XMLFile.GiveBirth();
         Console.WriteLine($"RSS Version: {Feed.Version}, title: {Feed.Channel!.Title}, Link: {Feed.Channel.Link},\ndescription: '{Feed.Channel.Description}'.");
                                                     // Feed.Channel has been asigned while birth was being given
         string WatchPath = Path.GetFullPath(rss).Replace(rss, "");
         Console.WriteLine("Checking directory '{0}' for updates.", WatchPath);
         using var FeedWatcher = new FileSystemWatcher(WatchPath);
         FeedWatcher.NotifyFilter = NotifyFilters.LastWrite;
-        FeedWatcher.Changed += XML.UpdateFile;
+        FeedWatcher.Changed += XMLFile.UpdateFile;
         FeedWatcher.Filter = "*.xml";
         FeedWatcher.EnableRaisingEvents = true;
 
         ChannelID = (ulong)Decimal.Parse(table["Discord"]["channel"]);  
         HttpClient http = new ();
-        DiscordClientBuilder builder = DiscordClientBuilder.CreateDefault(token, DiscordIntents.AllUnprivileged | DiscordIntents.MessageContents);
+        DiscordClientBuilder builder = DiscordClientBuilder.CreateDefault(Token, DiscordIntents.AllUnprivileged | DiscordIntents.MessageContents);
         builder.SetLogLevel(Microsoft.Extensions.Logging.LogLevel.Debug);
         builder.ConfigureEventHandlers(                     // A bunch of generic D#+ stuff to initialise the bot and handle new messages, all
             b => b.HandleMessageCreated(async (s, e) => {   // from the official guide btw: https://dsharpplus.github.io/DSharpPlus/index.html
@@ -106,19 +113,19 @@ class Program {
                     if (e.Channel.Id == ChannelID) {
                         Console.WriteLine($"Message received: «{e.Message.Content}»");
                         if (!Linking) {
-                            SetTimer(linking_time); Linking = true;
-                            Item Message = await Markdown.ParseMessage(e.Message, roles, roles_replace, trim_roles, table["RSS"]["default"]);
+                            SetTimer(LinkingTime); Linking = true;
+                            Item Message = await Markdown.ParseMessage(e.Message, Roles, RolesReplace, TrimRoles, table["RSS"]["default"]);
                             var attachements = new List<Enclosure>();
-                            await DownloadAttachements(http, e, attachements, media_folder, Link);
+                            await DownloadAttachements(http, e, attachements, MediaFolder, Link);
                             Message.Media = attachements;
                             Feed.Channel.Items.Insert(0, Message);
                         } else {
-                            StopTimer(); SetTimer(linking_time);
+                            StopTimer(); SetTimer(LinkingTime);
                             Console.WriteLine("Adding this message to the previous post.");
-                            await DownloadAttachements(http, e, Feed.Channel.Items[0].Media, media_folder, Link);
-                            Feed.Channel.Items[0].Description = String.Concat(Feed.Channel.Items[0].Description, "<br>\n<br>\n", await Task.Run(() => Markdown.AddMessage(e.Message, roles, roles_replace, trim_roles)));
+                            await DownloadAttachements(http, e, Feed.Channel.Items[0].Media, MediaFolder, Link);
+                            Feed.Channel.Items[0].Description = String.Concat(Feed.Channel.Items[0].Description, "<br>\n<br>\n", await Task.Run(() => Markdown.AddMessage(e.Message, Roles, RolesReplace, TrimRoles)));
                         }
-                        await XML.PutDown(Feed);
+                        await XMLFile.PutDown(Feed);
                     }
                 }
             }
@@ -128,24 +135,18 @@ class Program {
         await Client.ConnectAsync();   // This one connects you to Discord
         await Task.Delay(-1);           // You make it -1 so that the program doesn't stop
     }
-    static (string, string) ArrangeArguments(string[] args){
-        string configdir = (args[0].EndsWith(".toml")) ? args[0] : "config.toml";
-        string rss = (args[1].EndsWith(".xml")) ? args[1] : "feed.xml";
-        Console.WriteLine($"Argument №0 is '{args[0]}', and №1 is '{args[1]}'.");
-        return (configdir, rss);
-    }
 
-    static(List<string>, List<string>, List<bool>) GetRoles (List<string> roles, List<string> roles_replace, List<bool> trim_roles, TomlArray toml_roles, TomlArray toml_roles_replace, TomlArray toml_trim_roles) {
+    static(List<string>, List<string>, List<bool>) GetRoles (List<string> Roles, List<string> RolesReplace, List<bool> TrimRoles, TomlArray TomlRoles, TomlArray TomlRolesReplace, TomlArray TomlTrimRoles) {
         try {
-            foreach (var node in toml_roles)
-                roles.Add(node.ToString()!);
-            foreach (var node in toml_roles_replace) 
-                roles_replace.Add(node.ToString()!);
-            foreach (var node in toml_trim_roles) 
-                trim_roles.Add(Boolean.Parse(node.ToString()!));
+            foreach (var node in TomlRoles)
+                Roles.Add(node.ToString()!);
+            foreach (var node in TomlRolesReplace) 
+                RolesReplace.Add(node.ToString()!);
+            foreach (var node in TomlTrimRoles) 
+                TrimRoles.Add(Boolean.Parse(node.ToString()!));
         } catch {                   // There is no use in even ⅔ lists being there, if we need all 3 to properly remove roles
             Console.WriteLine("     Failed to extract role information, is your config set up correctly?");
-        } return (roles, roles_replace, trim_roles);
+        } return (Roles, RolesReplace, TrimRoles);
     }
 
     static async Task DownloadAttachements (HttpClient http, DSharpPlus.EventArgs.MessageCreatedEventArgs e, List<Enclosure> attachements, string MediaFolder, string Link) {
@@ -190,13 +191,5 @@ class Program {
         Console.WriteLine("Linking is {0}", Linking);
         Console.WriteLine("Timer elapsed at: {0}", e.SignalTime);
         StopTimer();
-    }
-
-    public static void Print (string s) {
-        Console.Write(s + " ");
-    }
-
-    public static void PrintLn (string s) {
-        Console.WriteLine(s);
     }
 }
