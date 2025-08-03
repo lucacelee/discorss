@@ -84,9 +84,9 @@ namespace RSS{
                     return rss;
                 } catch (Exception ex) {
                     Console.WriteLine("Error: Failed to read file!\n The following exception occurred: {0}", ex.Message);
-                    Console.WriteLine("Creating new RSS configuration.");
-                    return AssignRSS();
-                }
+                    Console.WriteLine("Please fix the XML file or create a new one.");
+                    throw;              // Sometimes the file is corrupted and has XML tags where there shouldn't be, and cases
+                }                       // like those would lead to further issues and data loss, so now the file isn't used
             } else {
                 Console.WriteLine("File absent; creating new RSS configuration.");
                 return AssignRSS();

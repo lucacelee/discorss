@@ -93,7 +93,13 @@ class Program
             Link = Instance.Link,
             Description = Table["RSS"]["description"]
         };
-        var Feed = XMLFile.GiveBirth();
+        RSS.RSS Feed;
+        try {
+            Feed = XMLFile.GiveBirth();
+        } catch {
+            return;
+        }
+        
         Console.WriteLine($"RSS Version: {Feed.Version}, title: {Feed.Channel!.Title}, Link: {Feed.Channel.Link},\ndescription: '{Feed.Channel.Description}'.");
                                                     // Feed.Channel has been asigned while birth was being given
         string WatchPath = Path.GetFullPath(Instance.RSS).Replace(Instance.RSS, "");
