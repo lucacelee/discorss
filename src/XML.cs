@@ -1,7 +1,4 @@
-using System.ComponentModel.DataAnnotations.Schema;
-using System.Runtime.InteropServices;
 using System.Xml.Serialization;
-using DSharpPlus;
 using DSharpPlus.Entities;
 using Formatting;
 

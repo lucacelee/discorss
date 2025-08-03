@@ -126,7 +126,8 @@ class Program {
                             Message.Media = attachements;
                             Feed.Channel.Items.Insert(0, Message);
                         } else {
-                            StopTimer(); SetTimer(LinkingTime);
+                             Console.WriteLine("Timer closed!");
+                            LinkTimer!.Enabled = false; SetTimer(LinkingTime);
                             Console.WriteLine("Adding this message to the previous post.");
                             await DownloadAttachements(http, e, Feed.Channel.Items[0].Media, MediaFolder, Link);
                             Feed.Channel.Items[0].Description = String.Concat(Feed.Channel.Items[0].Description, "<br>\n<br>\n", await Task.Run(() => MD.AddMessage()));
@@ -138,7 +139,7 @@ class Program {
         ));
 
         Client = builder.Build();
-        await Client.ConnectAsync();   // This one connects you to Discord
+        await Client.ConnectAsync();    // This one connects you to Discord
         await Task.Delay(-1);           // You make it -1 so that the program doesn't stop
     }
 
@@ -155,27 +156,44 @@ class Program {
         } return (Roles, RolesReplace, TrimRoles);
     }
 
-    static async Task DownloadAttachements (HttpClient http, DSharpPlus.EventArgs.MessageCreatedEventArgs e, List<Enclosure> attachements, string MediaFolder, string Link) {
+    static async Task DownloadAttachements (HttpClient http, DSharpPlus.EventArgs.MessageCreatedEventArgs e, List<Enclosure> Attachements, string MediaFolder, string Link) {
         Console.WriteLine("Downloading attachements: ");
-        foreach (var attachement in e.Message.Attachments)
+        foreach (var Attachement in e.Message.Attachments)
         {            // We cycle through every attachement and download it
-            Console.Write($"{attachement.Id}, ");
-            var data = await http.GetByteArrayAsync(attachement.Url);
+            Console.Write($"{Attachement.Id}, ");
+            byte[] data;
+            try {
+                data = await http.GetByteArrayAsync(Attachement.Url);
+            } catch (Exception ex) {
+                Console.WriteLine("\nFAILED TO DOWNLOAD ATTACHEMENT! DROPPING.");
+                Console.WriteLine("Attachement URL: {0}", Attachement.Url);
+                Console.WriteLine("The following exception occurred: {0}\n", ex.Message);
+                return;
+            }
             Directory.CreateDirectory(MediaFolder);
             string FileName;
-            if (attachement.FileName == null)
+            if (Attachement.FileName == null)
                 FileName = "";
-            else FileName = attachement.FileName;
-            string URL = Path.Combine(MediaFolder, attachement.Id.ToString() + "_" + FileName);
-            await File.WriteAllBytesAsync(URL, data);   // I doubt that there will be nameless files sent
+            else FileName = Attachement.FileName;
+            string URL = Path.Combine(MediaFolder, Attachement.Id.ToString() + "_" + FileName);
+            try {
+                await File.WriteAllBytesAsync(URL, data);   // I doubt that there will be nameless files sent
+            } catch (Exception ex) {
+                Console.WriteLine("\nFAILED TO WRITE ATTACHEMENT TO FILE! DROPPING.");
+                Console.WriteLine("Attachement URL: {0}", Attachement.Url);
+                Console.WriteLine("The following exception occurred: {0}\n", ex.Message);
+                return;
+            }
             var A = new Enclosure
             {
                 LocalUrl = URL,
                 MediaUrl = Path.Combine(Link, URL),
-                MediaType = attachement.MediaType!,     // I don't know how can an attachement have no media type
-                Length = (attachement.MediaType!.Split('/')[0] == "audio" || attachement.MediaType!.Split('/')[0] == "video") ? attachement.MediaType.Length : 0
+                MediaType = Attachement.MediaType!,     // I don't know how can an attachement have no media type
+                Length = (Attachement.MediaType!.Split('/')[0] == "audio" || Attachement.MediaType!.Split('/')[0] == "video") ? Attachement.MediaType.Length : 0
             };
-            attachements.Add(A);
+            Attachements.Add(A);
+            if (Attachements.Capacity == 0)
+                Console.WriteLine("no attachements were present.");
         }
     }
 
@@ -187,15 +205,11 @@ class Program {
         LinkTimer.Enabled = true;
     }
 
-    static void StopTimer() {
-        Console.WriteLine("Timer closed!");
-        LinkTimer!.Enabled = false;             // This is called only after the timer has been set 🡴
-    }
-
     private static void NotLinking(Object source, ElapsedEventArgs e) {
         Linking = false;
         Console.WriteLine("Linking is {0}", Linking);
         Console.WriteLine("Timer elapsed at: {0}", e.SignalTime);
-        StopTimer();
+        Console.WriteLine("Timer closed!");
+        LinkTimer!.Enabled = false;
     }
 }
