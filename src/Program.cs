@@ -50,7 +50,7 @@ class Program
                     The RSS feed file is specified in the config. If empty,
                     the program exists with a message, asking to specify it
 
-                        discorss 1.0
+                        discorss 1.1
                                         
 ");     return;                         // This is the help message you get when using the '-h' or '--help' argument
         } else {
