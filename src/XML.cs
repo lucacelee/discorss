@@ -30,8 +30,8 @@ namespace RSS{
             var rss = new RSS();
             try {
                 rss = (RSS)serialiser.Deserialize(filestream)!; // There ought to be a file stream if the file was updated, right?
-            } catch {
-                Console.WriteLine("Failed to load the feed. Any update to the file will be skipped.");
+            } catch (Exception ex) {
+                Console.WriteLine("Failed to load the feed. Any update to the file will be skipped.\n The following exception occurred: {0}", ex.Message);
                 return;
             }
 
@@ -82,8 +82,8 @@ namespace RSS{
                     if (rss.Version != Version || rss.Channel!.Title != Title || rss.Channel.Link != Link || rss.Channel.Description != Description)
                         return (PreferConfig) ? AssignRSS() : rss;                      // If 'Channel' isn't there, we catch it
                     return rss;
-                } catch {
-                    Console.WriteLine("Error: Failed to read file!");
+                } catch (Exception ex) {
+                    Console.WriteLine("Error: Failed to read file!\n The following exception occurred: {0}", ex.Message);
                     Console.WriteLine("Creating new RSS configuration.");
                     return AssignRSS();
                 }
