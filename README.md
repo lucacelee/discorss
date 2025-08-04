@@ -41,8 +41,9 @@ In the sample config, you will find quite a diverse selection of nodes. We will 
 * `rss_version` is self explanatory. This *will not* change how the file is structured, so you probably shouldn't change it
 * `prefer_config` is a boolean. If your config and your feed's title, link and description don't match, one is chosen based on this parameter
 #### Local
-* `media_folder` is the path to the folder, where all of your media is downloaded, which is mainly images
-* `rss_feed_file` is the most important (along with `token`) one: it is the file path to your RSS feed
+* `media_folder` is the path to the folder, where all of your media is downloaded, which is mainly images. This path is **local**, relative to the folder, in which your <ins>RSS feed file is located</ins>. The media folder _must_ be in the same folder, as your feed file
+* `rss_feed_file` is the most important (along with `token`) one: it is the file path to your RSS feed. This path can be either local or global
+
 **Important:** every single filed in the config *must be filled out*, otherwise something will probably misfunction. **Also**, for the roles parameters: each one must match the one above/below it, as there is no way to mark which one corresponds to which otherwise.
 ### Obtaining the Discord Token
 Before you can even think of getting a token, you first need to make sure you have a Discord account. If you do, that's great and we can proceed. Go to [the Discord applications portal](https://discord.com/developers/applications/), and click the big purple "New Application" button.

@@ -222,7 +222,7 @@ class Program
             var A = new Enclosure
             {
                 LocalUrl = URL,
-                MediaUrl = Path.Combine(MediaFolder, FileName),
+                MediaUrl = Path.Combine(Link, MediaFolder, FileName),
                 MediaType = Attachement.MediaType!,     // I don't know how can an attachement have no media type
                 Length = (Attachement.MediaType!.Split('/')[0] == "audio" || Attachement.MediaType!.Split('/')[0] == "video") ? Attachement.MediaType.Length : 0
             };
