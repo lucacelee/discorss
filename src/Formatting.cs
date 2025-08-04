@@ -74,12 +74,12 @@ namespace Formatting {
         }
 
         private static string FormatTimestamps (string Message) {
-            string Timestamp = @"\s(<t:)(?<Digits>\d+)(:\w>)\s";
+            string Timestamp = @"(<t:)(?<Digits>\d+)(:\w>)";
             Console.WriteLine("Reformatting the timestamps.");
             foreach (Match T in Regex.Matches(Message, Timestamp)) {
                 string Time = DateTimeOffset.FromUnixTimeSeconds((long)Decimal.Parse(T.Result(@"${Digits}"))).ToUniversalTime().DateTime.ToString();
                 Console.WriteLine("Time: {0}", Time);
-                Message = Regex.Replace(Message, Timestamp, " " + Time + " UTC ");
+                Message = Regex.Replace(Message, Timestamp, " " + Time + " UTC");
             }
             return Message;
         }
