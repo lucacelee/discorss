@@ -50,7 +50,7 @@ class Program
                     The RSS feed file is specified in the config. If empty,
                     the program exists with a message, asking to specify it
 
-                        discorss 1.1
+                        discorss 1.1.2
                                         
 ");     return;                         // This is the help message you get when using the '-h' or '--help' argument
         } else {
@@ -155,7 +155,7 @@ class Program
             b => b.HandleMessageCreated(async (s, e) => {   // from the official guide btw: https://dsharpplus.github.io/DSharpPlus/index.html
                 if (!RelayingRSS) {
                     if (e.Channel.Id == ChannelID) {
-                        Console.WriteLine($"Message received: «{e.Message.Content}»");
+                        Console.WriteLine($"\nMessage received: «{e.Message.Content}»");
                         var MD = new Markdown (e.Message) {
                             Roles = Roles!,
                             RolesReplace = RolesReplace!,
@@ -166,14 +166,14 @@ class Program
                             SetTimer(LinkingTime); Linking = true;
                             Item Message = await MD.ParseMessage();
                             var attachements = new List<Enclosure>();
-                            await DownloadAttachements(http, e, attachements, MediaFolder, Link);
+                            await DownloadAttachements(http, e, attachements);
                             Message.Media = attachements;
                             Feed.Channel!.Items.Insert(0, Message);
                         } else {
                              Console.WriteLine("Timer closed!");
                             LinkTimer!.Enabled = false; SetTimer(LinkingTime);
                             Console.WriteLine("Adding this message to the previous post.");
-                            await DownloadAttachements(http, e, Feed.Channel!.Items[0].Media, MediaFolder, Link);
+                            await DownloadAttachements(http, e, Feed.Channel!.Items[0].Media);
                             Feed.Channel.Items[0].Description = String.Concat(Feed.Channel.Items[0].Description, "<br>\n<br>\n", await Task.Run(() => MD.AddMessage()));
                         }
                         await XMLFile.PutDown(Feed);
@@ -184,7 +184,7 @@ class Program
         return builder;
     }
 
-    static async Task DownloadAttachements (HttpClient http, DSharpPlus.EventArgs.MessageCreatedEventArgs e, List<Enclosure> Attachements, string MediaFolder, string Link) {
+    async Task DownloadAttachements (HttpClient http, DSharpPlus.EventArgs.MessageCreatedEventArgs e, List<Enclosure> Attachements) {
         Console.WriteLine("Downloading attachements: ");
         foreach (var Attachement in e.Message.Attachments) {            // We cycle through every attachement and download it
             Console.Write($"{Attachement.Id}, ");
@@ -194,27 +194,34 @@ class Program
             } catch (Exception ex) {
                 Console.WriteLine("\nFAILED TO DOWNLOAD ATTACHEMENT! DROPPING.");
                 Console.WriteLine("Attachement URL: {0}", Attachement.Url);
-                Console.WriteLine("The following exception occurred: {0}\n", ex.Message);
+                Console.WriteLine("Error: {0}\n", ex.Message);
                 return;
             }
-            Directory.CreateDirectory(MediaFolder);
+            string FullFolder = Path.GetFullPath(RSS).Replace(Path.GetFileName(RSS), "") + MediaFolder;
+            try {
+                Directory.CreateDirectory(FullFolder);
+            } catch (Exception ex) {
+                Console.WriteLine("\nFAILED TO DEFINE THE MEDIA FOLDER!\nError: {0}\nUnable to download attachements, dropping.", ex.Message);
+                return;
+            }
             string FileName;
             if (Attachement.FileName == null)
                 FileName = "";
             else FileName = Attachement.FileName;
-            string URL = Path.Combine(MediaFolder, Attachement.Id.ToString() + "_" + FileName);
+            string URL;
             try {
+                URL = Path.Combine(FullFolder, Attachement.Id.ToString() + "_" + FileName);
                 await File.WriteAllBytesAsync(URL, data);   // I doubt that there will be nameless files sent
             } catch (Exception ex) {
                 Console.WriteLine("\nFAILED TO WRITE ATTACHEMENT TO FILE! DROPPING.");
                 Console.WriteLine("Attachement URL: {0}", Attachement.Url);
-                Console.WriteLine("The following exception occurred: {0}\n", ex.Message);
+                Console.WriteLine("Error: {0}\n", ex.Message);
                 return;
             }
             var A = new Enclosure
             {
                 LocalUrl = URL,
-                MediaUrl = Path.Combine(Link, URL),
+                MediaUrl = Path.Combine(Link, MediaFolder),
                 MediaType = Attachement.MediaType!,     // I don't know how can an attachement have no media type
                 Length = (Attachement.MediaType!.Split('/')[0] == "audio" || Attachement.MediaType!.Split('/')[0] == "video") ? Attachement.MediaType.Length : 0
             };
