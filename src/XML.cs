@@ -54,7 +54,12 @@ namespace RSS{
                 .WithContent(Markup.Format(Item.Description, Item.Title, Item.Author));
             foreach (var Embed in Embeds)
                 Message.AddEmbed(Embed);
-            await Message.SendAsync(Channel);
+            try {
+                await Message.SendAsync(Channel);
+            } catch (Exception ex) {
+                Console.WriteLine("Failed to send message. The following error occurred:\n{0}", ex.Message);
+                return null!;
+            }
             await Task.Delay(500);
             Program.RelayingRSS = false;
             return rss;
