@@ -102,13 +102,18 @@ class Program
         
         Console.WriteLine($"RSS Version: {Feed.Version}, title: {Feed.Channel!.Title}, Link: {Feed.Channel.Link},\ndescription: '{Feed.Channel.Description}'.");
                                                     // Feed.Channel has been asigned while birth was being given
-        string WatchPath = Path.GetFullPath(Instance.RSS).Replace(Instance.RSS, "");
+        string WatchPath = Path.GetFullPath(Instance.RSS).Replace(Path.GetFileName(Instance.RSS), "");
         Console.WriteLine("Checking directory '{0}' for updates.", WatchPath);
-        using var FeedWatcher = new FileSystemWatcher(WatchPath);
-        FeedWatcher.NotifyFilter = NotifyFilters.LastWrite;
-        FeedWatcher.Changed += XMLFile.UpdateFile;
-        FeedWatcher.Filter = "*.xml";
-        FeedWatcher.EnableRaisingEvents = true;
+        try {
+            using var FeedWatcher = new FileSystemWatcher(WatchPath);
+            FeedWatcher.NotifyFilter = NotifyFilters.LastWrite;
+            FeedWatcher.Changed += XMLFile.UpdateFile;
+            FeedWatcher.Filter = "*.xml";
+            FeedWatcher.EnableRaisingEvents = true;
+        } catch (Exception ex){
+            Console.WriteLine("Error surveying the directory, the following exceptio occurred:\n{0}", ex.Message);
+            return;
+        }
 
         ChannelID = (ulong)Decimal.Parse(Table["Discord"]["channel"]);  
 
