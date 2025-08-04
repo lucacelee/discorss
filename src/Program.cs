@@ -209,8 +209,9 @@ class Program
                 FileName = "";
             else FileName = Attachement.FileName;
             string URL;
+            FileName = Attachement.Id.ToString() + "_" + FileName;
             try {
-                URL = Path.Combine(FullFolder, Attachement.Id.ToString() + "_" + FileName);
+                URL = Path.Combine(FullFolder, FileName);
                 await File.WriteAllBytesAsync(URL, data);   // I doubt that there will be nameless files sent
             } catch (Exception ex) {
                 Console.WriteLine("\nFAILED TO WRITE ATTACHEMENT TO FILE! DROPPING.");
@@ -221,7 +222,7 @@ class Program
             var A = new Enclosure
             {
                 LocalUrl = URL,
-                MediaUrl = Path.Combine(Link, MediaFolder),
+                MediaUrl = Path.Combine(MediaFolder, FileName),
                 MediaType = Attachement.MediaType!,     // I don't know how can an attachement have no media type
                 Length = (Attachement.MediaType!.Split('/')[0] == "audio" || Attachement.MediaType!.Split('/')[0] == "video") ? Attachement.MediaType.Length : 0
             };
