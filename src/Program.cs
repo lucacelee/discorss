@@ -21,6 +21,7 @@ class Program
     public required List<string>? Roles { get; set; }
     public required List<string>? RolesReplace { get; set; }
     public required List<bool>? TrimRoles { get; set; }
+    private FileSystemWatcher? FeedWatcher;
     static async Task Main(string[] args) {
         // Console.WriteLine("Hello, World!");
         string ConfigPath;
@@ -96,20 +97,24 @@ class Program
         RSS.RSS Feed;
         try {
             Feed = XMLFile.GiveBirth();
+            Console.WriteLine($"RSS Version: {Feed.Version}, title: {Feed.Channel!.Title}, Link: {Feed.Channel.Link},\ndescription: '{Feed.Channel.Description}'.");
         } catch {
             return;
         }
         
-        Console.WriteLine($"RSS Version: {Feed.Version}, title: {Feed.Channel!.Title}, Link: {Feed.Channel.Link},\ndescription: '{Feed.Channel.Description}'.");
+        Client = Instance.BuildBuilder(Feed, XMLFile, Table["RSS"]["default"]).Build();
                                                     // Feed.Channel has been asigned while birth was being given
         string WatchPath = Path.GetFullPath(Instance.RSS).Replace(Path.GetFileName(Instance.RSS), "");
-        Console.WriteLine("Checking directory '{0}' for updates.", WatchPath);
+        Console.WriteLine("Checking directory '{0}' for updates.\n", WatchPath);
         try {
-            using var FeedWatcher = new FileSystemWatcher(WatchPath);
-            FeedWatcher.NotifyFilter = NotifyFilters.LastWrite;
-            FeedWatcher.Changed += XMLFile.UpdateFile;
-            FeedWatcher.Filter = "*.xml";
-            FeedWatcher.EnableRaisingEvents = true;
+            Instance.FeedWatcher = new FileSystemWatcher(WatchPath) {
+                NotifyFilter = NotifyFilters.LastWrite,
+                Filter = "*.xml",
+                EnableRaisingEvents = true
+            };
+            Instance.FeedWatcher.Changed += async (sender, e) => {
+                Feed = await XMLFile.UpdateFile(sender, e, Feed) ?? Feed;
+            };
         } catch (Exception ex){
             Console.WriteLine("Error surveying the directory, the following exceptio occurred:\n{0}", ex.Message);
             return;
@@ -117,7 +122,6 @@ class Program
 
         ChannelID = (ulong)Decimal.Parse(Table["Discord"]["channel"]);  
 
-        Client = Instance.BuildBuilder(Feed, XMLFile, Table["RSS"]["default"]).Build();
         await Client.ConnectAsync();    // This one connects you to Discord
         await Task.Delay(-1);           // You make it -1 so that the program doesn't stop
     }

@@ -12,38 +12,36 @@ namespace RSS{
         public required string Title { get; set; }
         public required string Link { get; set; }
         public required string Description { get; set; }
-        public async void UpdateFile(object sender, FileSystemEventArgs e) {
+        public async Task<RSS> UpdateFile(object _, FileSystemEventArgs e, RSS rss) {
             if (Program.RelayingRSS)
-                return;
-            Console.WriteLine("File update received!");
+                return null!;
+            Console.WriteLine("\nFile update received!");
             if (e.ChangeType != WatcherChangeTypes.Changed)
-                return;
+                return null!;
             if (InWriting)
-                return;
+                return null!;
 
             Console.WriteLine("RSS feed updated! Reading changes.");
             XmlSerializer serialiser = new(typeof(RSS));
             using FileStream filestream = new(FilePath!, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
             if (filestream.Position > 0)    // XML.FilePath is set on line 85 in Program.cs, e.g. before FileSystemWatcher is initialised
                     filestream.Position = 0;
-
-            var rss = new RSS();
             try {
                 rss = (RSS)serialiser.Deserialize(filestream)!; // There ought to be a file stream if the file was updated, right?
             } catch (Exception ex) {
-                Console.WriteLine("Failed to load the feed. Any update to the file will be skipped.\n The following exception occurred: {0}", ex.Message);
-                return;
+                Console.WriteLine("Failed to load the feed. Any update to the file will be skipped.\n The following exception occurred: {0}\n", ex.Message);
+                return null!;
             }
 
             if (rss.Channel == null || rss.Channel.Items == null)
-                return;
+                return null!;
             var Item = rss.Channel.Items[0];
             if (Item.Origin == "Discord")
-                return;
+                return null!;
 
             Program.RelayingRSS = true;
             List<DiscordEmbed> Embeds = [];
-            Console.WriteLine(Item.Description);
+            Console.WriteLine("\nNew RSS item:\nTitle: '{0}', author: {1}, description:\n{2}\n", Item.Title, Item.Author, Item.Description);
             if (Item.Media != null) {
                 foreach (var Medium in Item.Media) {
                     Embeds.Add(new DiscordEmbedBuilder {
@@ -59,6 +57,7 @@ namespace RSS{
             await Message.SendAsync(Channel);
             await Task.Delay(500);
             Program.RelayingRSS = false;
+            return rss;
         }
         public async Task PutDown(RSS rss) {
             InWriting = true;
@@ -71,13 +70,13 @@ namespace RSS{
         }
         public RSS GiveBirth() {
             if (File.Exists(FilePath)) {                                                // If file exists — deserialise; otherwise create new
-                Console.Write("Reading file...");
+                Console.Write("\nReading file... ");
                 XmlSerializer serialiser = new(typeof(RSS));
                 using FileStream filestream = new(FilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 if (filestream.Position > 0)
                     filestream.Position = 0;
                 try {
-                    Console.WriteLine(" Deserialising the XML!");
+                    Console.WriteLine("Deserialising the XML!");
                     var rss = (RSS)serialiser.Deserialize(filestream)!;
                     if (rss.Version != Version || rss.Channel!.Title != Title || rss.Channel.Link != Link || rss.Channel.Description != Description)
                         return (PreferConfig) ? AssignRSS() : rss;                      // If 'Channel' isn't there, we catch it
@@ -88,13 +87,13 @@ namespace RSS{
                     throw;              // Sometimes the file is corrupted and has XML tags where there shouldn't be, and cases
                 }                       // like those would lead to further issues and data loss, so now the file isn't used
             } else {
-                Console.WriteLine("File absent; creating new RSS configuration.");
+                Console.WriteLine("\nFile absent; creating new RSS configuration.");
                 return AssignRSS();
             }
         }
 
         private RSS AssignRSS (){
-            Console.WriteLine("Asigning new RSS data.");
+            Console.WriteLine("Asigning new RSS data.\n");
             var Channel = new Channel {
                 Title = Title,
                 Link = Link,
