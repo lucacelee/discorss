@@ -80,7 +80,8 @@ To build the app, you need, as I mentioned in the previous section, the **.NET 9
 ``` bash
 git clone https://github.com/lucacelee/discorss.git
 cd discorss
-dotnet publish --self-cointained
+dotnet publish -r [os] --sc -c Release /p:PublishSingleFile=true
 ```
+If you with to compile the program for a defferent OS, replace [os] with either a different identifier. The ones you will most likely use are `linux-x64`, `osx-x64` and `win-x64`, which all are 64 bit. If you don't want to have the executable in a single file, you can remove `-c Release /p:PublishSingleFile=true` from the end of the command.
 # License
 This project is licensed under the [GPL v3](LICENSE).
