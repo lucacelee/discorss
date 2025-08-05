@@ -95,75 +95,27 @@ namespace Formatting {
 
             Message = (!RemoveFormatting) ? Message.Replace("\n", "\n<br>") : Message;
 
-            List<Text> Strings = [];
-            if (!RemoveFormatting){
+            List<Text> Strings = [];        // I want to clarify that 'Strings' is a list of configurations, which all then get executed one by one in
+            if (!RemoveFormatting){         // the order in which they are added. That's why placing the more complicated patterns first is important;
                 Strings.Add(new Text {
-                    Pattern = @"(#){3}(?<Body>.+)\n",
+                    Pattern = @"(?:^|<br>)(#{3})[ \t]*(?<Body>.+)\s*(?:<br>)?",
                     Onset = h3Onset,
-                    Coda = h3Coda + '\n',
+                    Coda = h3Coda,
                     Replacement = @"${Body}"
                 });
                 Strings.Add(new Text {
-                    Pattern = @"(#){2}(?<Body>.+)\n",
+                    Pattern = @"(?:^|<br>)(#{2})[ \t]*(?<Body>.+)\s*(?:<br>)?",
                     Onset = h2Onset,
-                    Coda = h2Coda + '\n',
+                    Coda = h2Coda,
                     Replacement = @"${Body}"
                 });
                 Strings.Add(new Text {
-                    Pattern = @"(#)(?<Body>.+)\n",
+                    Pattern = @"(?:^|<br>)(#{1})[ \t]*(?<Body>.+)\s*(?:<br>)?",
                     Onset = h1Onset,
-                    Coda = h1Coda + '\n',
+                    Coda = h1Coda,
                     Replacement = @"${Body}"
                 });
             }
-            Strings.Add(new Text {
-                Pattern = @"(_){2}(?<Body>.+)(_){2}",
-                Onset = uOnset,
-                Coda = uCoda,
-                Replacement = @"${Body}"
-            });
-            Strings.Add(new Text {
-                Pattern = @"(_)(?<Body>.+)(_)",
-                Onset = iOnset,
-                Coda = iCoda,
-                Replacement = @"${Body}"
-            });
-            Strings.Add(new Text {
-                Pattern = @"(~){2}(?<Body>.+)(~){2}",
-                Onset = sOnset,
-                Coda = sCoda,
-                Replacement = @"${Body}"
-            });
-            Strings.Add(new Text {
-                Pattern = @"(`){2}(?<Body>.+)(`){2}",
-                Onset = cOnset,
-                Coda = cCoda,
-                Replacement = @"${Body}"
-            });
-            Strings.Add(new Text {
-                Pattern = @"(`)(?<Body>.+)(`)",
-                Onset = cOnset,
-                Coda = cCoda,
-                Replacement = @"${Body}"
-            });
-            Strings.Add(new Text {
-                Pattern = @"(\u007c){2}(?<Body>.+)(\u007c){2}",
-                Onset = jOnset,
-                Coda = jCoda,
-                Replacement = @"${Body}"
-            });
-            Strings.Add(new Text {
-                Pattern = @"(\*){2}(?<Body>.+)(\*){2}",
-                Onset = bOnset,
-                Coda = bCoda,
-                Replacement = @"${Body}"
-            });
-            Strings.Add(new Text {
-                Pattern = @"(\*)(?<Body>.+)(\*)",
-                Onset = iOnset,
-                Coda = iCoda,
-                Replacement = @"${Body}"
-            });
             Strings.Add(new Text {
                 Pattern = @"(\*){3}(?<Body1>.*)(\*){2}(?<Body2>.*)(\*){1}",
                 Onset = "",
@@ -175,6 +127,60 @@ namespace Formatting {
                 Onset = "",
                 Coda = "",
                 Replacement = iOnset + @"${Body1}" + bOnset + "${Body2}" + bCoda + iCoda
+            });
+            Strings.Add(new Text {
+                Pattern = @"(\*){3}(?<Body>.*?)(\*){3}",
+                Onset = iOnset + bOnset,
+                Coda = bCoda + iOnset,
+                Replacement = @"${Body}"
+            });
+            Strings.Add(new Text {
+                Pattern = @"(\*){2}(?<Body>.*?)(\*){2}",
+                Onset = bOnset,
+                Coda = bCoda,
+                Replacement = @"${Body}"
+            });
+            Strings.Add(new Text {
+                Pattern = @"(\*){1}(?<Body>.*?)(\*){1}",
+                Onset = iOnset,
+                Coda = iCoda,
+                Replacement = @"${Body}"
+            });
+            Strings.Add(new Text {
+                Pattern = @"(_){2}(?<Body>.*?)(_){2}",
+                Onset = uOnset,
+                Coda = uCoda,
+                Replacement = @"${Body}"
+            });
+            Strings.Add(new Text {
+                Pattern = @"(_){1}(?<Body>.*?)(_){1}",
+                Onset = iOnset,
+                Coda = iCoda,
+                Replacement = @"${Body}"
+            });
+            Strings.Add(new Text {
+                Pattern = @"(~){2}(?<Body>.*?)(~){2}",
+                Onset = sOnset,
+                Coda = sCoda,
+                Replacement = @"${Body}"
+            });
+            Strings.Add(new Text {
+                Pattern = @"(`){2}(?<Body>.*?)(`){2}",
+                Onset = cOnset,
+                Coda = cCoda,
+                Replacement = @"${Body}"
+            });
+            Strings.Add(new Text {
+                Pattern = @"(`){1}(?<Body>.*?)(`){1}",
+                Onset = cOnset,
+                Coda = cCoda,
+                Replacement = @"${Body}"
+            });
+            Strings.Add(new Text {
+                Pattern = @"(\u007c){2}(?<Body>.*?)(\u007c){2}",
+                Onset = jOnset,
+                Coda = jCoda,
+                Replacement = @"${Body}"
             });
             foreach (var Extract in Strings)
                 Message = Extract.Replace(Message);
