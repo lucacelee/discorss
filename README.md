@@ -75,6 +75,43 @@ git clone https://github.com/lucacelee/discorss.git
 cd discorss
 dotnet run
 ```
+### Running in the background
+Unless your server is running with a <ins>desktop enviroment</ins>, you will have to interact with your init system to launch it at boot time. Most Linux distros come with **systemd**, but if your system doesn't use systemd, then you _probably know what you are doing._ If you are unsure about whether your system uses systemd or not, run this command in the terminal and find out, as it will print your current init system:
+``` bash
+ps -p 1 -o comm=
+# if the output is 'systemd', then it's systemd
+```
+To make **discorss** start automatically on boot, you will have to create a *systemd unit*. Creating one isn't too difficult, you merely need to place a file in the `/etc/systemd/system` called `[yourname].service` and specify the parameters. You can search online and learn everything about how systemd works, but for the purposes of this guide, I created a simple `discorss.service` file that should work right away.
+``` ini
+[Unit]
+Description=discorss
+
+[Service]
+ExecStart=/usr/local/bin/discorss /usr/local/etc/discorss.toml
+Type=idle
+Restart=on-failure
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+```
+I would recommend placing the `discorss` file separate from the web content, so that nobody can access it from the internet, preferably in `/usr/local/bin/`, which is conventionally the folder for user installed apps. The type is `idle` to make sure that it is run after everything else, but you, of course, can modify this file as you please. To enable the service, you need to execute the following commands:
+``` bash
+$ sudo systemctl daemon-reload
+$ sudo systemctl enable discorss.service
+# Checking if it is enabled
+$ sudo systemctl is-enabled discorss.service
+enabled
+
+# To optionally enable the service right away:
+$ sudo systemctl start my-service.service
+# Or you can restart the machine itself
+$ sudo reboot
+```
+Now the **discorss** should automatically start each time the server restarts and constntly run in the background :D
+
+To all Windows users — you can toggle automatic launch for executables in the *control panel* or the new *settings* app. Just search for it and you will find the correct setting somewhere.
 ## Building from source
 To build the app, you need, as I mentioned in the previous section, the **.NET 9 SDK** installed on your system, which you can find at [Microsoft's website](https://dotnet.microsoft.com/en-us/download). Once you have ensured you have that by either installing, or using `dotnet --version` in your terminal, clone the repository with Git, then `cd` into it and run `dotnet publish` to create a framework-dependant binary, or `dotnet publish --self-contained` to create a binary, that can be used without .NET installed on one's system.
 ``` bash
