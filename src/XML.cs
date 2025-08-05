@@ -160,7 +160,10 @@ namespace RSS{
         [XmlElement("timestamp", Order = 6)]
         public long? Timestamp { get; set; }
 
-        [XmlElement("enclosure", Order = 7)]
+        [XmlElement("pubDate", Order = 7)]
+        public string? PubDate { get; set; }
+
+        [XmlElement("enclosure", Order = 8)]
         public required List<Enclosure> Media { get; set; }
     }
     public class Enclosure {

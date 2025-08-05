@@ -18,21 +18,22 @@ namespace Formatting {
 
         public async Task<Item> ParseMessage() {
             Attachments = (M.Attachments.Count > 0); var Time = M.Timestamp; DefaultTitle = DefaultTitle.Trim() + " ";
-            Message = FormatTimestamps(RemoveRoles()) + "\n\n By: " + M.Author!.Username; // Same here
+            Message = FormatTimestamps(RemoveRoles()); // Same here
             Item Entry = new() {
                 Title = await Task.Run(() => SetTitle(Time)),
                 Description = await Task.Run(() => SetDescription()),
                 Author = M.Author!.Username,
                 Media = [],
                 Origin = "Discord",
-                Timestamp = Time.ToUnixTimeSeconds()
+                Timestamp = Time.ToUnixTimeSeconds(),
+                PubDate = Time.UtcDateTime.ToString() + " UTC"
             };
             Console.WriteLine($"The result of parsing the item.\nTitle: {Entry.Title}, author: {Entry.Author}, Description:\n'{Entry.Description}'");
             return Entry;
         }
 
         private string SetDescription () {
-            Console.WriteLine("Setting the description of the message.");
+            Console.WriteLine("\nSetting the description of the message.");
             if (Message.Length < 100 && Attachments && !Message.Contains('\n'))
                 return "";
             Message = FormatLikeXML(Message, false);
@@ -41,7 +42,7 @@ namespace Formatting {
         }
 
         private string SetTitle (DateTimeOffset time_offset) {
-            Console.WriteLine("Setting the title of the item.");
+            Console.WriteLine("\nSetting the title of the item.");
             var CleanMessage = FormatLikeXML(RemoveRoles(), true);
             CleanMessage = String.Concat(CleanMessage[0].ToString().ToUpper(), CleanMessage[1..]);
             var FirstLine = CleanMessage.Split('\n')[0];
@@ -53,7 +54,7 @@ namespace Formatting {
                 return FirstLine.Trim();
             else if (FirstLine.Length < 150)
                 return FirstLine.Trim();
-            else return String.Concat(DefaultTitle, time_offset.DateTime.ToUniversalTime(), " UTC");
+            else return String.Concat(DefaultTitle, time_offset.UtcDateTime, " UTC");
         }
 
         private string RemoveRoles() {
