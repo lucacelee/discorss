@@ -58,7 +58,7 @@ namespace Formatting {
         }
 
         private string RemoveRoles() {
-            Console.WriteLine("Removing Discord roles from the string.");
+            Console.WriteLine("\nRemoving Discord roles from the string.");
             foreach (string Role in Roles) {
                 if (TrimRoles[Roles.IndexOf(Role)]){
                     Console.WriteLine("Trimming for {0} is enabled.", Role);
@@ -70,6 +70,7 @@ namespace Formatting {
                     };
                 }
                 Message = Message.Replace(Role, RolesReplace[Roles.IndexOf(Role)]);
+                Console.WriteLine("Replacing '{0}' with '{1}'", Role, RolesReplace[Roles.IndexOf(Role)]);
             }
             return Message;
         }

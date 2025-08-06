@@ -82,7 +82,7 @@ class Program
             Link = Table["RSS"]["link"],
             LinkingTime = (int)Decimal.Parse(Table["Discord"]["linking_time"]),
             Roles = TmpRoles,
-            RolesReplace = TmpRoles,
+            RolesReplace = TmpRolesReplace,
             TrimRoles = TmpTrimRoles,
         };
 
