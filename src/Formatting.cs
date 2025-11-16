@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Polly;
 using RSS;
 
 namespace Formatting {
@@ -12,7 +13,7 @@ namespace Formatting {
         private string Message = M!.Content;
 
         public string AddMessage() {
-            Message = FormatTimestamps(RemoveRoles()) + "\n\n By: " + M.Author!.Username;
+            Message = FormatTimestamps(RemoveRoles()) + "\nBy: " + M.Author!.Username;
             return SetDescription();                             // I'm fairly certain that we won't get an authorless message
         }
 
@@ -64,8 +65,7 @@ namespace Formatting {
                     Console.WriteLine("Trimming for {0} is enabled.", Role);
                     if (Message.StartsWith(Role, StringComparison.Ordinal)) {
                         Console.Write($"Message begins with '{Role}', trimming: ");
-                        Message = Message.Remove(0, Role.Length);
-                        Message = Message.TrimStart();
+                        Message = Message[Role.Length..].TrimStart();
                         Console.WriteLine(Message);
                     };
                 }
@@ -76,12 +76,41 @@ namespace Formatting {
         }
 
         private static string FormatTimestamps (string Message) {
-            string Timestamp = @"(<t:)(?<Digits>\d+)(:\w>)";
-            Console.WriteLine("Reformatting the timestamps.");
+            string Timestamp = @"(<t:)(?<Digits>\d+):(?<Type>\w)>";
+            Console.WriteLine("Reformatting the timestamps. \nFound timestamps: ");
             foreach (Match T in Regex.Matches(Message, Timestamp)) {
-                string Time = DateTimeOffset.FromUnixTimeSeconds((long)Decimal.Parse(T.Result(@"${Digits}"))).ToUniversalTime().DateTime.ToString();
-                Console.WriteLine("Time: {0}", Time);
-                Message = Regex.Replace(Message, Timestamp, " " + Time + " UTC");
+                DateTimeOffset TimeUTC = DateTimeOffset.FromUnixTimeSeconds((long)Decimal.Parse(T.Result(@"${Digits}"))).ToUniversalTime().DateTime;
+                string ConvertedTime = "";
+                Console.Write(T + " ");
+                string Result = T.Result(@"${Type}");
+                Console.Write(Result + " ");
+                switch (Result) {
+                    case "t":
+                        ConvertedTime = TimeUTC.ToString(" HH:mm ") + "GMT";
+                        break;
+                    case "T":
+                        ConvertedTime = TimeUTC.ToString(" HH:mm:ss ") + "GMT";
+                        break;
+                    case "d":
+                        ConvertedTime = TimeUTC.ToString(" dd.MM.yyyy");
+                        break;
+                    case "D":
+                        ConvertedTime = TimeUTC.ToString(" dd MMMM yyyy");
+                        break;
+                    case "f":
+                        ConvertedTime = TimeUTC.ToString(" dd MMMM yyyy HH:mm ") + "GMT";
+                        break;
+                    case "F":
+                        ConvertedTime = TimeUTC.ToString(" dddd, dd MMMM yyyy HH:mm ") + "GMT";
+                        break;
+                    case "R":
+                        string TimeOffset = (TimeUTC - DateTime.UtcNow).ToString();
+                        ConvertedTime = Regex.Replace(((TimeOffset[0] == '-') ? (TimeOffset[1..] + " ago") : ("in " + TimeOffset)), @"(\.\d+)$", "").Replace(".", " days ");
+                        break;
+                } 
+                Console.WriteLine("Time: {0}", ConvertedTime);
+                Regex Rgx = new(Timestamp);
+                Message = Rgx.Replace(Message, ConvertedTime, 1); 
             }
             return Message;
         }

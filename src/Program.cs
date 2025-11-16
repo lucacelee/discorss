@@ -22,8 +22,10 @@ class Program
     public required List<string>? RolesReplace { get; set; }
     public required List<bool>? TrimRoles { get; set; }
     private FileSystemWatcher? FeedWatcher;
+    public const string Version = "1.1.6";
     static async Task Main(string[] args) {
         // Console.WriteLine("Hello, World!");
+        const string Version = "1.1.6";
         string ConfigPath;
 
         if (args.Length == 0) {
@@ -51,9 +53,8 @@ class Program
                     The RSS feed file is specified in the config. If empty,
                     the program exists with a message, asking to specify it
 
-                        discorss 1.1.5 hotfix
-                                        
-");     return;                         // This is the help message you get when using the '-h' or '--help' argument
+                        discorss " + Version + "\n");
+                        return;                         // This is the help message you get when using the '-h' or '--help' argument
         } else {
             ConfigPath = args[0];
         }
@@ -120,7 +121,12 @@ class Program
             return;
         }
 
-        ChannelID = (ulong)Decimal.Parse(Table["Discord"]["channel"]);  
+        ChannelID = (ulong)Decimal.Parse(Table["Discord"]["channel"]);
+        var DiscordChannel = await Client.GetChannelAsync(ChannelID);
+        string GuildName;
+        try { GuildName = DiscordChannel.Guild.Name; }
+        catch { GuildName = "[unavailable]"; }
+        Console.WriteLine("Connecting to #{0} in '{1}'", DiscordChannel.Name, GuildName);
 
         await Client.ConnectAsync();    // This one connects you to Discord
         await Task.Delay(-1);           // You make it -1 so that the program doesn't stop
@@ -166,7 +172,7 @@ class Program
                             TrimRoles = TrimRoles!,
                             DefaultTitle = TitleDefault
                         };
-                        if (!Linking) {
+                        if (!Linking) {                     // Linking — connecting multiple Discord messages into a single RSS entry
                             SetTimer(LinkingTime); Linking = true;
                             Item Message = await MD.ParseMessage();
                             var attachements = new List<Enclosure>();
@@ -174,7 +180,7 @@ class Program
                             Message.Media = attachements;
                             Feed.Channel!.Items.Insert(0, Message);
                         } else {
-                             Console.WriteLine("Timer closed!");
+                            Console.WriteLine("Timer closed!");
                             LinkTimer!.Enabled = false; SetTimer(LinkingTime);
                             Console.WriteLine("Adding this message to the previous post.");
                             await DownloadAttachements(http, e, Feed.Channel!.Items[0].Media);
@@ -208,12 +214,8 @@ class Program
                 Console.WriteLine("\nFAILED TO DEFINE THE MEDIA FOLDER!\nError: {0}\nUnable to download attachements, dropping.", ex.Message);
                 return;
             }
-            string FileName;
-            if (Attachement.FileName == null)
-                FileName = "";
-            else FileName = Attachement.FileName;
             string URL;
-            FileName = Attachement.Id.ToString() + "_" + FileName;
+            string FileName = Attachement.Id.ToString() + "_" + (Attachement.FileName ?? "");
             try {
                 URL = Path.Combine(FullFolder, FileName);
                 await File.WriteAllBytesAsync(URL, data);   // I doubt that there will be nameless files sent
