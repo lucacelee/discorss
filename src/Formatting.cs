@@ -86,22 +86,22 @@ namespace Formatting {
                 Console.Write(Result + " ");
                 switch (Result) {
                     case "t":
-                        ConvertedTime = TimeUTC.ToString(" HH:mm ") + "GMT";
+                        ConvertedTime = TimeUTC.ToString("HH:mm ") + "GMT";
                         break;
                     case "T":
-                        ConvertedTime = TimeUTC.ToString(" HH:mm:ss ") + "GMT";
+                        ConvertedTime = TimeUTC.ToString("HH:mm:ss ") + "GMT";
                         break;
                     case "d":
-                        ConvertedTime = TimeUTC.ToString(" dd.MM.yyyy");
+                        ConvertedTime = TimeUTC.ToString("dd.MM.yyyy");
                         break;
                     case "D":
-                        ConvertedTime = TimeUTC.ToString(" dd MMMM yyyy");
+                        ConvertedTime = TimeUTC.ToString("dd MMMM yyyy");
                         break;
                     case "f":
-                        ConvertedTime = TimeUTC.ToString(" dd MMMM yyyy HH:mm ") + "GMT";
+                        ConvertedTime = TimeUTC.ToString("dd MMMM yyyy HH:mm ") + "GMT";
                         break;
                     case "F":
-                        ConvertedTime = TimeUTC.ToString(" dddd, dd MMMM yyyy HH:mm ") + "GMT";
+                        ConvertedTime = TimeUTC.ToString("dddd, dd MMMM yyyy HH:mm ") + "GMT";
                         break;
                     case "R":
                         string TimeOffset = (TimeUTC - DateTime.UtcNow).ToString();
@@ -193,6 +193,12 @@ namespace Formatting {
                 Pattern = @"(~){2}(?<Body>.*?)(~){2}",
                 Onset = sOnset,
                 Coda = sCoda,
+                Replacement = @"${Body}"
+            });
+            Strings.Add(new Text {
+                Pattern = @"(`){3}(?<Body>.*?)(`){3}",
+                Onset = cOnset,
+                Coda = cCoda + "<br>\n",
                 Replacement = @"${Body}"
             });
             Strings.Add(new Text {
