@@ -35,14 +35,19 @@ namespace Formatting {
 
         private string SetDescription () {
             Console.WriteLine("\nSetting the description of the message.");
-            if (Message.Length < 100 && Attachments && !Message.Contains('\n'))
+            if (Message.Length < 100 && Attachments && !Message.Contains('\n'))     // Why? Look down.
                 return "";
+            if (Message.Contains('\n')){
+                string FirstLine = Message.Split('\n')[0];
+                if (FirstLine.Length < 150)
+                    Message = Message.Replace(FirstLine, "");
+            }
             Message = FormatLikeXML(Message, false);
             Message = String.Concat(Message[0].ToString().ToUpper(), Message[1..]);
             return Message;
         }
 
-        private string SetTitle (DateTimeOffset time_offset) {
+        private string SetTitle (DateTimeOffset TimeOffset) {
             Console.WriteLine("\nSetting the title of the item.");
             var CleanMessage = FormatLikeXML(RemoveRoles(), true);
             CleanMessage = String.Concat(CleanMessage[0].ToString().ToUpper(), CleanMessage[1..]);
@@ -50,12 +55,12 @@ namespace Formatting {
             if (FirstLine.Contains('#'))
                 FirstLine = FirstLine.Replace('#', ' ');
             if (CleanMessage.Length < 100 && Attachments && !CleanMessage.Contains('\n'))
-                return CleanMessage.Trim();
-            else if (CleanMessage.Length < 150 && Message.Contains('\n'))
+                return CleanMessage.Trim();                                         // You see this here?
+            else if (CleanMessage.Length < 150 && Message.Contains('\n'))           // It becomes the title
                 return FirstLine.Trim();
             else if (FirstLine.Length < 150)
                 return FirstLine.Trim();
-            else return String.Concat(DefaultTitle, time_offset.UtcDateTime, " UTC");
+            else return String.Concat(DefaultTitle, TimeOffset.UtcDateTime, " UTC");
         }
 
         private string RemoveRoles() {
