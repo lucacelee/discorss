@@ -40,7 +40,7 @@ namespace Formatting {
             if (Message.Contains('\n')){
                 string FirstLine = Message.Split('\n')[0];
                 if (FirstLine.Length < 150)
-                    Message = Message.Replace(FirstLine, "");
+                    Message = Message.Replace(FirstLine + "\n", "");
             }
             Message = FormatLikeXML(Message, false);
             Message = String.Concat(Message[0].ToString().ToUpper(), Message[1..]);
@@ -201,7 +201,7 @@ namespace Formatting {
                 Replacement = @"${Body}"
             });
             Strings.Add(new Text {
-                Pattern = @"(`){3}(?<Body>.*?)(`){3}",
+                Pattern = @"(?s)(`){3}(?<Body>.*?)(`){3}",
                 Onset = cOnset,
                 Coda = cCoda + "<br>\n",
                 Replacement = @"${Body}"
