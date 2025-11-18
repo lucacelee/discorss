@@ -36,7 +36,7 @@ namespace RSS{
             if (rss.Channel == null || rss.Channel.Items == null)
                 return null!;
             var Item = rss.Channel.Items[0];
-            if (Item.Origin == "Discord")
+            if (Item.Origin == "Discord" || Item.Origin == "Confirmed")
                 return null!;
 
             Program.RelayingRSS = true;
@@ -60,7 +60,8 @@ namespace RSS{
                 Console.WriteLine("Failed to send message. The following error occurred:\n{0}", ex.Message);
                 return null!;
             }
-            await Task.Delay(500);
+            rss.Channel.Items[0].Origin = "Confirmed";  // Confirming that the update was received and sent, so that later is isn't duplicated
+            await PutDown(rss);
             Program.RelayingRSS = false;
             return rss;
         }

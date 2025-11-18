@@ -21,6 +21,7 @@ class Program
     public required List<string>? Roles { get; set; }
     public required List<string>? RolesReplace { get; set; }
     public required List<bool>? TrimRoles { get; set; }
+    private RSS.RSS? Feed { get; set; }
     private FileSystemWatcher? FeedWatcher;
     public const string Version = "1.1.6";
     static async Task Main(string[] args) {
@@ -95,15 +96,14 @@ class Program
             Link = Instance.Link,
             Description = Table["RSS"]["description"]
         };
-        RSS.RSS Feed;
         try {
-            Feed = XMLFile.GiveBirth();
-            Console.WriteLine($"RSS Version: {Feed.Version}, title: {Feed.Channel!.Title}, Link: {Feed.Channel.Link},\ndescription: '{Feed.Channel.Description}'.");
+            Instance.Feed = XMLFile.GiveBirth();
+            Console.WriteLine($"RSS Version: {Instance.Feed.Version}, title: {Instance.Feed.Channel!.Title}, Link: {Instance.Feed.Channel.Link},\ndescription: '{Instance.Feed.Channel.Description}'.");
         } catch {
             return;
         }
         
-        Client = Instance.BuildBuilder(Feed, XMLFile, Table["RSS"]["default"]).Build();
+        Client = Instance.BuildBuilder(XMLFile, Table["RSS"]["default"]).Build();
                                                     // Feed.Channel has been asigned while birth was being given
         string WatchPath = Path.GetFullPath(Instance.RSS).Replace(Path.GetFileName(Instance.RSS), "");
         Console.WriteLine("Checking directory '{0}' for updates.\n", WatchPath);
@@ -114,7 +114,7 @@ class Program
                 EnableRaisingEvents = true
             };
             Instance.FeedWatcher.Changed += async (sender, e) => {
-                Feed = await XMLFile.UpdateFile(sender, e, Feed) ?? Feed;
+                Instance.Feed = await XMLFile.UpdateFile(sender, e, Instance.Feed) ?? Instance.Feed;
             };
         } catch (Exception ex){
             Console.WriteLine("Error surveying the directory, the following exceptio occurred:\n{0}", ex.Message);
@@ -157,7 +157,7 @@ class Program
         return Table;
     }
 
-    DiscordClientBuilder BuildBuilder (RSS.RSS Feed, XML XMLFile, string TitleDefault) {
+    DiscordClientBuilder BuildBuilder (XML XMLFile, string TitleDefault) {
         HttpClient http = new ();
         DiscordClientBuilder builder = DiscordClientBuilder.CreateDefault(Token, DiscordIntents.AllUnprivileged | DiscordIntents.MessageContents);
         builder.SetLogLevel(Microsoft.Extensions.Logging.LogLevel.Debug);
@@ -178,13 +178,13 @@ class Program
                             var attachements = new List<Enclosure>();
                             await DownloadAttachements(http, e, attachements);
                             Message.Media = attachements;
-                            Feed.Channel!.Items.Insert(0, Message);
+                            Feed!.Channel!.Items.Insert(0, Message);
                         } else {
                             Console.WriteLine("Timer closed!");
                             LinkTimer!.Enabled = false; SetTimer(LinkingTime);
                             Console.WriteLine("Adding this message to the previous post.");
-                            await DownloadAttachements(http, e, Feed.Channel!.Items[0].Media);
-                            Feed.Channel.Items[0].Description = String.Concat(Feed.Channel.Items[0].Description, "<br>\n<br>\n", await Task.Run(() => MD.AddMessage()));
+                            await DownloadAttachements(http, e, Feed!.Channel!.Items[0].Media);
+                            Feed!.Channel.Items[0].Description = String.Concat(Feed.Channel.Items[0].Description, "<br>\n<br>\n", await Task.Run(() => MD.AddMessage()));
                         }
                         await XMLFile.PutDown(Feed);
                     }
