@@ -12,7 +12,7 @@ namespace RSS{
         public required string Title { get; set; }
         public required string Link { get; set; }
         public required string Description { get; set; }
-        public async Task<RSS> UpdateFile(object _, FileSystemEventArgs e, RSS rss) {
+        public async Task<RSS> UpdateFile(object _, FileSystemEventArgs e, RSS rss, string[] LinkArguments) {
             if (Program.RelayingRSS)
                 return null!;
             Console.WriteLine("\nFile update received!");
@@ -61,6 +61,11 @@ namespace RSS{
                 return null!;
             }
             rss.Channel.Items[0].Origin = "Confirmed";  // Confirming that the update was received and sent, so that later is isn't duplicated
+            var TimeNow = DateTimeOffset.UtcNow;
+            rss.Channel.Items[0].Timestamp = TimeNow.ToUnixTimeSeconds();
+            rss.Channel.Items[0].PubDate = TimeNow.UtcDateTime.ToString("dd MMMM yyyy HH:mm ") + "GMT";
+            if (LinkArguments[1] == "timestamp")        // For now only "timestamp" is supported
+                rss.Channel.Items[0].Link = Link + LinkArguments[0] + TimeNow.ToUnixTimeSeconds().ToString();
             await PutDown(rss);
             Program.RelayingRSS = false;
             return rss;

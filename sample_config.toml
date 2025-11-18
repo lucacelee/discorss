@@ -13,6 +13,8 @@ link = ""                       # The link to the RSS feed folder on your websit
 default = "Announcement for "   # Default title for an RSS item, in case one can't be parsed in the message (appends date afterwards)
 
 rss_version = "2.0"             # *Version of the RSS specification, to which this dosument adheres
+message_link_format = "?id="    # **A string that follows the link that is used to link to a specific item
+id_xml_element = "timestamp"    # **XML element to use as the value to for item links (right now only timestamp is supported)
 prefer_config = true            # *Do you prefer to use the data in the config over the existing data in the XML document?
 
 [Local]
@@ -20,3 +22,4 @@ media_folder = "media"          # *The folder to which all downloaded files will
 rss_feed_file = "feed.xml"      # The file, where your RSS feed is stored
 
 #                                 * — if you don't know what you are doing, just leave it as is, at its default value
+#                                ** — depends on the implementation of your RSS frontend, or even might be unnecessary

@@ -21,6 +21,8 @@ class Program
     public required List<string>? Roles { get; set; }
     public required List<string>? RolesReplace { get; set; }
     public required List<bool>? TrimRoles { get; set; }
+    public string? IdLink { get; set; }
+    public string? XmlIdElement { get; set; }
     private RSS.RSS? Feed { get; set; }
     private FileSystemWatcher? FeedWatcher;
     public const string Version = "1.1.6";
@@ -86,6 +88,8 @@ class Program
             Roles = TmpRoles,
             RolesReplace = TmpRolesReplace,
             TrimRoles = TmpTrimRoles,
+            IdLink = Table["RSS"]["message_link_format"],
+            XmlIdElement = Table["RSS"]["id_xml_element"]
         };
 
         var XMLFile = new XML {
@@ -114,10 +118,10 @@ class Program
                 EnableRaisingEvents = true
             };
             Instance.FeedWatcher.Changed += async (sender, e) => {
-                Instance.Feed = await XMLFile.UpdateFile(sender, e, Instance.Feed) ?? Instance.Feed;
+                Instance.Feed = await XMLFile.UpdateFile(sender, e, Instance.Feed, [Instance.IdLink, Instance.XmlIdElement]) ?? Instance.Feed;
             };
         } catch (Exception ex){
-            Console.WriteLine("Error surveying the directory, the following exceptio occurred:\n{0}", ex.Message);
+            Console.WriteLine("Error surveying the directory, the following exception occurred:\n{0}", ex.Message);
             return;
         }
 
@@ -175,6 +179,7 @@ class Program
                         if (!Linking) {                     // Linking — connecting multiple Discord messages into a single RSS entry
                             SetTimer(LinkingTime); Linking = true;
                             Item Message = await MD.ParseMessage();
+                            Message.Link = XMLFile.Link + IdLink + Message.Timestamp;   // Later more than just timestamp will be supported hopefully :)
                             var attachements = new List<Enclosure>();
                             await DownloadAttachements(http, e, attachements);
                             Message.Media = attachements;
