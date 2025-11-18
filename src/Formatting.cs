@@ -153,8 +153,8 @@ namespace Formatting {
                     Replacement = @"${Body}"
                 });
             }
-            Strings.Add(new Text {
-                Pattern = @"(?<!.*\[.+\]\()https://(?<Link>.+?\.\w+)(?:[\s\.,/]|$)(?!\))",
+            Strings.Add(new Text {                                                  // Matching a link
+                Pattern = @"(?<!.*\[.+\]\()https://(?<Link>.+?\.\w+)(?:\b|$)",
                 Onset = "",
                 Coda = "",
                 Replacement = "<a href=\"https://${Link}\">https://${Link}</a>"
