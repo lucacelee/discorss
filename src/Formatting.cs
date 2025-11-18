@@ -26,6 +26,7 @@ namespace Formatting {
                 Author = M.Author!.Username,
                 Media = [],
                 Origin = "Discord",
+                DiscordLink = M.JumpLink.ToString(),
                 Timestamp = Time.ToUnixTimeSeconds(),
                 PubDate = Time.UtcDateTime.ToString() + " UTC"
             };

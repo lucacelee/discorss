@@ -157,14 +157,17 @@ namespace RSS{
 
         [XmlElement("origin", Order = 5)]
         public string? Origin { get; set; }
+
+        [XmlElement("dlink", Order = 6)]
+        public string? DiscordLink { get; set; }
         
-        [XmlElement("timestamp", Order = 6)]
+        [XmlElement("timestamp", Order = 7)]
         public long? Timestamp { get; set; }
 
-        [XmlElement("pubDate", Order = 7)]
+        [XmlElement("pubDate", Order = 8)]
         public string? PubDate { get; set; }
 
-        [XmlElement("enclosure", Order = 8)]
+        [XmlElement("enclosure", Order = 9)]
         public required List<Enclosure> Media { get; set; }
     }
     public class Enclosure {
