@@ -262,7 +262,7 @@ namespace Formatting {
         }
 
         private static string Reformat(string Message) {
-            return Message.Replace("<u>", "__").Replace("</u>", "__").Replace("<b>", "**").Replace("</b>", "**").Replace("<i>", "*").Replace("</i>", "*").Replace("<s>", "~~").Replace("</s>", "~~").Replace("<code>", "`").Replace("</code>", "`").Replace("<h1>", "## ").Replace("</h1>", "").Replace("<h2>", "### ").Replace("</h2>", "").Replace("<h3>", "#### ").Replace("</h3>", "").Replace("\n<br>", "\n");
+            return Message.Replace("<u>", "__").Replace("</u>", "__").Replace("<b>", "**").Replace("</b>", "**").Replace("<i>", "*").Replace("</i>", "*").Replace("<s>", "~~").Replace("</s>", "~~").Replace("<code>", "`").Replace("</code>", "`").Replace("<h1>", "## ").Replace("</h1>", "").Replace("<h2>", "### ").Replace("</h2>", "").Replace("<h3>", "#### ").Replace("</h3>", "").Replace("\n", "").Replace("<br>", "\n");
         }
     }
 }
