@@ -154,6 +154,18 @@ namespace Formatting {
                 });
             }
             Strings.Add(new Text {
+                Pattern = @"(?<!.*\[.+\]\()https://(?<Link>.+?\.\w+)(?:[\s\.,/]|$)(?!\))",
+                Onset = "",
+                Coda = "",
+                Replacement = "<a href=\"https://${Link}\">https://${Link}</a>"
+            });
+            Strings.Add(new Text {
+                Pattern = @"(\[)(?<Title>.*)(\])(\()(?<Link>.*)(\))",
+                Onset = "",
+                Coda = "",
+                Replacement = "<a href=\"${Link}\">${Title}</a>"
+            });
+            Strings.Add(new Text {
                 Pattern = @"(\*){3}(?<Body1>.*)(\*){2}(?<Body2>.*)(\*){1}",
                 Onset = "",
                 Coda = "",
