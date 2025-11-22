@@ -1,5 +1,5 @@
 ﻿using System.Timers;
-using System.IO;
+using System.Text.RegularExpressions;
 using RSS;
 using Formatting;
 using DSharpPlus;
@@ -174,7 +174,8 @@ class Program
                             Roles = Roles!,
                             RolesReplace = RolesReplace!,
                             TrimRoles = TrimRoles!,
-                            DefaultTitle = TitleDefault
+                            DefaultTitle = TitleDefault,
+                            Message = ReplaceDiscordJumpLinks(e.Message)
                         };
                         if (!Linking) {                     // Linking — connecting multiple Discord messages into a single RSS entry
                             SetTimer(LinkingTime); Linking = true;
@@ -241,6 +242,41 @@ class Program
             if (Attachements.Capacity == 0)
                 Console.WriteLine("no attachements were present.");
         }
+    }
+
+    private string ReplaceDiscordJumpLinks (DSharpPlus.Entities.DiscordMessage M) {
+        string Message = M.Content;
+        string DiscordLink = @"(?<!.*\[.+\]\()https://discord\.com/channels/(?<Guild>\d+)/" + ChannelID + @"/(?<Message>\d+)(?:\b|$)";
+        string EmbeddedDiscordLink = @"(\[)(?<Title>.*)(\])(\()https://discord\.com/channels/(?<Guild>\d+)/" + ChannelID + @"/(?<Message>\d+)(\))";
+        bool FoundLinks = false;
+        Console.Write("Checking for links to messages in this channel... ");
+
+        foreach (Match T in Regex.Matches(Message, DiscordLink)) {
+            Console.Write("Found one!");
+            foreach (var Item in Feed!.Channel!.Items) {
+                if (Item.DiscordLink == T.Result(@"https://discord.com/channels/${Guild}/" + ChannelID + @"/${Message}")) {
+                    FoundLinks = true;
+                    Console.Write(" It matches a message in the feed too!\nItem in question: {0}\n\n", Item.Link);
+                    Regex Rgx = new(DiscordLink);
+                    Message = Rgx.Replace(Message, "[[Link!]](" + Link + IdLink + Item.Timestamp + ")", 1);
+                }
+            }
+        }
+
+        foreach (Match T in Regex.Matches(Message, EmbeddedDiscordLink)) {
+            Console.Write("Found one embedded!");
+            foreach (var Item in Feed!.Channel!.Items) {
+                if (Item.DiscordLink == T.Result(@"https://discord.com/channels/${Guild}/" + ChannelID + @"/${Message}")) {
+                    FoundLinks = true;
+                    Console.Write(" It matches a message in the feed too!\nItem in question: {0}\n\n", Item.Link);
+                    Regex Rgx = new(EmbeddedDiscordLink);
+                    Message = Rgx.Replace(Message, "[" + T.Result(@"${Title}") + "](" + Link + IdLink + Item.Timestamp + ")", 1);
+                }
+            }
+    }
+        if (FoundLinks)
+            Console.WriteLine("\nMessage, with Discord jump links replaced:\n{0}\n", Message);
+        return Message;
     }
 
     static void SetTimer(int Time) {

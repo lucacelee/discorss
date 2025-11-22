@@ -1,5 +1,4 @@
 using System.Text.RegularExpressions;
-using Polly;
 using RSS;
 
 namespace Formatting {
@@ -10,7 +9,8 @@ namespace Formatting {
         public required List<bool> TrimRoles { get; set; }
         public required string DefaultTitle { get; set; }
         private bool Attachments { get; set; }
-        private string Message = M!.Content;
+        public required string Message { get; set; }
+        public string? CustomLinkRoot { get; set; }
 
         public string AddMessage() {
             Message = FormatTimestamps(RemoveRoles()) + "\nBy: " + M.Author!.Username;
@@ -43,14 +43,14 @@ namespace Formatting {
                 if (FirstLine.Length < 150)
                     Message = Message.Replace(FirstLine + "\n", "");
             }
-            Message = FormatLikeXML(Message, false);
+            Message = FormatLikeXML(Message, false, CustomLinkRoot!);
             Message = String.Concat(Message[0].ToString().ToUpper(), Message[1..]);
             return Message;
         }
 
         private string SetTitle (DateTimeOffset TimeOffset) {
             Console.WriteLine("\nSetting the title of the item.");
-            var CleanMessage = FormatLikeXML(RemoveRoles(), true);
+            var CleanMessage = FormatLikeXML(RemoveRoles(), true, CustomLinkRoot!);
             CleanMessage = String.Concat(CleanMessage[0].ToString().ToUpper(), CleanMessage[1..]);
             var FirstLine = CleanMessage.Split('\n')[0];
             if (FirstLine.Contains('#'))
@@ -121,7 +121,8 @@ namespace Formatting {
             return Message;
         }
 
-        private static string FormatLikeXML (string Message, bool RemoveFormatting) {
+        private static string FormatLikeXML (string Message, bool RemoveFormatting, string CustomLinkRoot) {
+            Console.WriteLine("Message before formatting:\n{0}\n", Message);
             string uOnset, uCoda, sOnset, sCoda, cOnset, cCoda, iOnset, iCoda, bOnset, bCoda, jOnset, jCoda, h1Onset, h1Coda, h2Onset, h2Coda, h3Onset, h3Coda;
             uOnset = @"<u>"; uCoda = @"</u>"; sOnset = @"<s>"; sCoda = @"</s>"; bOnset = @"<b>"; bCoda = @"</b>"; iOnset = @"<i>"; iCoda = @"</i>";
             cOnset = "<code>"; cCoda = @"</code>"; jOnset = jCoda = "";
@@ -153,8 +154,14 @@ namespace Formatting {
                     Replacement = @"${Body}"
                 });
             }
+            Strings.Add(new Text {                                                  // Matching a Discord jump link
+                Pattern = @"(?<!.*\[.+\]\()https://discord.com/channels/(?<CustomLink>\d+/\d+/\d+)(?:\b|$)",
+                Onset = "",
+                Coda = "",
+                Replacement = "[[Discord Link!]](https://discord.com/channels/${CustomLink})"
+            });
             Strings.Add(new Text {                                                  // Matching a link
-                Pattern = @"(?<!.*\[.+\]\()https://(?<Link>.+?\.\w+)(?:\b|$)",
+                Pattern = @"(?<!.*\[.+\]\()https://(?<Link>.+?\.[\d\w\./\?=]+)(?:\b|$)",
                 Onset = "",
                 Coda = "",
                 Replacement = "<a href=\"https://${Link}\">https://${Link}</a>"
