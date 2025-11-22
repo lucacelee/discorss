@@ -13,7 +13,7 @@ namespace Formatting {
         public string? CustomLinkRoot { get; set; }
 
         public string AddMessage() {
-            Message = FormatTimestamps(RemoveRoles()) + "\nBy: " + M.Author!.Username;
+            Message = FormatTimestamps(RemoveRoles()) + "\nBy: _" + M.Author!.Username + "_";
             return SetDescription();                             // I'm fairly certain that we won't get an authorless message
         }
 
@@ -111,7 +111,7 @@ namespace Formatting {
                         break;
                     case "R":
                         string TimeOffset = (TimeUTC - DateTime.UtcNow).ToString();
-                        ConvertedTime = Regex.Replace(((TimeOffset[0] == '-') ? (TimeOffset[1..] + " ago") : ("in " + TimeOffset)), @"(\.\d+)$", "").Replace(".", " days ");
+                        ConvertedTime = Regex.Replace((TimeOffset[0] == '-') ? (TimeOffset[1..] + " ago") : ("in " + TimeOffset), @"(\.\d+)$", "").Replace(".", " days ");
                         break;
                 } 
                 Console.WriteLine("Time: {0}", ConvertedTime);
@@ -161,7 +161,7 @@ namespace Formatting {
                 Replacement = "[[Discord Link!]](https://discord.com/channels/${CustomLink})"
             });
             Strings.Add(new Text {                                                  // Matching a link
-                Pattern = @"(?<!.*\[.+\]\()https://(?<Link>.+?\.[\d\w\./\?=]+)(?:\b|$)",
+                Pattern = @"(?<!.*\[.+\]\()https://(?<Link>.+?\.[\d\w\./\?=-]+)(?:\b|$)",
                 Onset = "",
                 Coda = "",
                 Replacement = "<a href=\"https://${Link}\">https://${Link}</a>"
