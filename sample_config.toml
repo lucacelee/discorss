@@ -5,6 +5,7 @@ roles = ["@everyone"]           # Roles that should be trimmed in the beginning 
 inline_roles = ["everyone"]     # Replacement strings for roles that are pinged inside of a message
 trim_roles = [true]             # Do you want to trim the above role from the beginning of a message?
 linking_time = 180              # Time delay between multiple messages being linked into one post in seconds; default is 3 minutes
+tenor_api_key = ""              # Optionally — key for Tenor API, in order to download GIFs: https://developers.google.com/tenor/guides/quickstart
 
 [RSS]
 title = ""                      # The title of your feed (you can use your Discord channel name too)

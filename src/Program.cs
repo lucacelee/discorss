@@ -5,6 +5,9 @@ using Formatting;
 using DSharpPlus;
 using Tommy;
 using DSharpPlus.Entities;
+using System.Text.Json.Serialization;
+using System.Net.Http.Json;
+using System.Linq.Expressions;
 
 class Program
 {
@@ -25,6 +28,7 @@ class Program
     public string? XmlIdElement { get; set; }
     private RSS.RSS? Feed { get; set; }
     private FileSystemWatcher? FeedWatcher;
+    private string? TenorAPI;
     public const string Version = "1.1.6";
     static async Task Main(string[] args) {
         // Console.WriteLine("Hello, World!");
@@ -89,7 +93,8 @@ class Program
             RolesReplace = TmpRolesReplace,
             TrimRoles = TmpTrimRoles,
             IdLink = Table["RSS"]["message_link_format"],
-            XmlIdElement = Table["RSS"]["id_xml_element"]
+            XmlIdElement = Table["RSS"]["id_xml_element"],
+            TenorAPI = Table["Discord"]["tenor_api_key"]
         };
 
         var XMLFile = new XML {
@@ -170,12 +175,13 @@ class Program
                 if (!RelayingRSS) {
                     if (e.Channel.Id == ChannelID) {
                         Console.WriteLine($"\nMessage received: «{e.Message.Content}»");
+                        (string? eMessage, string? TenorGifUrl, float? GifDuration) = await GetTenorURLs(http, e.Message);
                         var MD = new Markdown (e.Message) {
                             Roles = Roles!,
                             RolesReplace = RolesReplace!,
                             TrimRoles = TrimRoles!,
                             DefaultTitle = TitleDefault,
-                            Message = ReplaceDiscordJumpLinks(e.Message)
+                            Message = (eMessage == null) ? "[GIF]" : ReplaceDiscordJumpLinks(eMessage)
                         };
                         if (!Linking) {                     // Linking — connecting multiple Discord messages into a single RSS entry
                             SetTimer(LinkingTime); Linking = true;
@@ -183,6 +189,14 @@ class Program
                             Message.Link = XMLFile.Link + IdLink + Message.Timestamp;   // Later more than just timestamp will be supported hopefully :)
                             var attachements = new List<Enclosure>();
                             await DownloadAttachements(http, e, attachements);
+                            if (TenorGifUrl != null) {
+                                attachements.Insert(0, new Enclosure {
+                                    LocalUrl = "",
+                                    MediaUrl = TenorGifUrl,
+                                    Length = (int?)GifDuration ?? 0,
+                                    MediaType = "image/gif"
+                                });
+                            }
                             Message.Media = attachements;
                             Feed!.Channel!.Items.Insert(0, Message);
                         } else {
@@ -190,6 +204,14 @@ class Program
                             LinkTimer!.Enabled = false; SetTimer(LinkingTime);
                             Console.WriteLine("Adding this message to the previous post.");
                             await DownloadAttachements(http, e, Feed!.Channel!.Items[0].Media);
+                            if (TenorGifUrl != null) {
+                                Feed!.Channel!.Items[0].Media.Insert(0, new Enclosure {
+                                    LocalUrl = "",
+                                    MediaUrl = TenorGifUrl,
+                                    Length = (int?)GifDuration ?? 0,
+                                    MediaType = "image/gif"
+                                });
+                            }
                             Feed!.Channel.Items[0].Description = String.Concat(Feed.Channel.Items[0].Description, "<br>\n<br>\n", await Task.Run(() => MD.AddMessage()));
                         }
                         await XMLFile.PutDown(Feed);
@@ -231,8 +253,7 @@ class Program
                 Console.WriteLine("Error: {0}\n", ex.Message);
                 return;
             }
-            var A = new Enclosure
-            {
+            var A = new Enclosure {
                 LocalUrl = URL,
                 MediaUrl = Path.Combine(Link, MediaFolder, FileName),
                 MediaType = Attachement.MediaType!,     // I don't know how can an attachement have no media type
@@ -244,8 +265,31 @@ class Program
         }
     }
 
-    private string ReplaceDiscordJumpLinks (DSharpPlus.Entities.DiscordMessage M) {
+    private async Task<(string?, string?, float?)> GetTenorURLs (HttpClient http, DSharpPlus.Entities.DiscordMessage M) {
         string Message = M.Content;
+        if (TenorAPI != null) {
+            var TenorRegex = new Regex(@"^https://tenor.com/view/(?<GIF>.+)$");
+            Console.WriteLine("Getting Tenor GIFs... Match? {0}", TenorRegex.IsMatch(Message));
+            try {
+                if (TenorRegex.IsMatch(Message)) {
+                    Console.WriteLine("It was empty!");
+                    var Fugi = TenorRegex.Match(Message);
+                    string TenorApiUrl = "https://tenor.googleapis.com/v2/posts?" + "&key=" + TenorAPI + "&client_ley=discorss&ids=" + Fugi.Result(@"${GIF}").Split('-')[^1];
+                    var Response = await http.GetFromJsonAsync<JSON.Response>(TenorApiUrl);
+                    string? Url = Response!.Results![0].MediaFormats!.Gif!.Url!;
+                    float? Duration = Response!.Results![0].MediaFormats!.Gif!.Duration!;
+                    Console.WriteLine("Got Tenor URL, here is the result:\n{0}", Url);
+                    return (null, Url, Duration);
+                }
+            }
+            catch (Exception ex) {
+                Console.WriteLine("Oops, cannot get the GIF!\nError: {0}", ex);
+            }
+        }
+        return (Message, null, null);
+    }
+
+    private string ReplaceDiscordJumpLinks (string Message) {
         string DiscordLink = @"(?<!.*\[.+\]\()https://discord\.com/channels/(?<Guild>\d+)/" + ChannelID + @"/(?<Message>\d+)(?:\b|$)";
         string EmbeddedDiscordLink = @"(\[)(?<Title>.*)(\])(\()https://discord\.com/channels/(?<Guild>\d+)/" + ChannelID + @"/(?<Message>\d+)(\))";
         bool FoundLinks = false;
@@ -293,5 +337,29 @@ class Program
         Console.WriteLine("Timer elapsed at: {0}", e.SignalTime);
         Console.WriteLine("Timer closed!");
         LinkTimer!.Enabled = false;
+    }
+}
+
+class JSON {
+    public class Response {
+        [JsonPropertyName("results")]
+        public List<Result>? Results { get; set; }
+    }
+    public class Result {
+        [JsonPropertyName("media_formats")]
+        public MediaFormats? MediaFormats { get; set; }
+    }
+
+    public class MediaFormats {
+        [JsonPropertyName("gif")]
+        public Media? Gif { get; set; }
+    }
+
+    public class Media {
+        [JsonPropertyName("url")]
+        public string? Url { get; set; }
+
+        [JsonPropertyName("duration")]
+        public float? Duration { get; set; }
     }
 }
