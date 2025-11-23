@@ -9,6 +9,7 @@ using System.Text.Json.Serialization;
 using System.Net.Http.Json;
 using System.Linq.Expressions;
 using Microsoft.VisualBasic;
+using System.Runtime.CompilerServices;
 
 class Program
 {
@@ -30,10 +31,11 @@ class Program
     private RSS.RSS? Feed { get; set; }
     private FileSystemWatcher? FeedWatcher;
     private string? TenorAPI;
-    public const string Version = "1.1.6";
+    private int? Mode;
+    public const string Version = "1.2";
     static async Task Main(string[] args) {
         // Console.WriteLine("Hello, World!");
-        const string Version = "1.1.6";
+        const string Version = "1.2";
         string ConfigPath;
 
         if (args.Length == 0) {
@@ -95,8 +97,25 @@ class Program
             TrimRoles = TmpTrimRoles,
             IdLink = Table["RSS"]["message_link_format"],
             XmlIdElement = Table["RSS"]["id_xml_element"],
-            TenorAPI = Table["Discord"]["tenor_api_key"]
+            TenorAPI = Table["Discord"]["tenor_api_key"],
+            Mode = Table["Local"]["relay_type"]
         };
+        
+        switch (Instance.Mode) {
+            case 0:
+                Console.WriteLine("Relay type 0 is selected — enabling mirroring both ways");
+                break;
+            case 1:
+                Console.WriteLine("Relay type 1 is selected — enabling mirroring only from Discord to RSS");
+                break;
+            case 2:
+                Console.WriteLine("Relay type 2 is selected — enabling mirroring only from RSS to Discord");
+                break;
+        }
+        if (Instance.Mode > 2) {
+            Console.WriteLine("Relay type 3+ is selected — enabling no mirroring and closing the program >:)");
+            Environment.Exit(0);
+        }
 
         var XMLFile = new XML {
             FilePath = Instance.RSS,
@@ -115,21 +134,22 @@ class Program
         
         Client = Instance.BuildBuilder(XMLFile, Table["RSS"]["default"]).Build();
                                                     // Feed.Channel has been asigned while birth was being given
-        string WatchPath = Path.GetFullPath(Instance.RSS).Replace(Path.GetFileName(Instance.RSS), "");
-        Console.WriteLine("Checking directory '{0}' for updates.\n", WatchPath);
-        try {
-            Instance.FeedWatcher = new FileSystemWatcher(WatchPath) {
-                NotifyFilter = NotifyFilters.LastWrite,
-                Filter = "*.xml",
-                EnableRaisingEvents = true
-            };
-            Instance.FeedWatcher.Changed += async (sender, e) => {
-                Instance.Feed = await XMLFile.UpdateFile(sender, e, Instance.Feed, [Instance.IdLink, Instance.XmlIdElement]) ?? Instance.Feed;
-            };
-        } catch (Exception ex){
-            Console.WriteLine("Error surveying the directory, the following exception occurred:\n{0}", ex.Message);
-            return;
-        }
+        if (Instance.Mode == 0 || Instance.Mode == 2) {
+            string WatchPath = Path.GetFullPath(Instance.RSS).Replace(Path.GetFileName(Instance.RSS), "");
+            Console.WriteLine("Checking directory '{0}' for updates.\n", WatchPath);
+            try {
+                Instance.FeedWatcher = new FileSystemWatcher(WatchPath) {
+                    NotifyFilter = NotifyFilters.LastWrite,
+                    Filter = "*.xml",
+                    EnableRaisingEvents = true
+                };
+                Instance.FeedWatcher.Changed += async (sender, e) => {
+                    Instance.Feed = await XMLFile.UpdateFile(sender, e, Instance.Feed, [Instance.IdLink, Instance.XmlIdElement]) ?? Instance.Feed;
+                };
+            } catch (Exception ex){
+                Console.WriteLine("Error surveying the directory, the following exception occurred:\n{0}", ex.Message);
+                return;
+        }}
 
         ChannelID = (ulong)Decimal.Parse(Table["Discord"]["channel"]);
         var DiscordChannel = await Client.GetChannelAsync(ChannelID);
@@ -171,55 +191,56 @@ class Program
         HttpClient http = new ();
         DiscordClientBuilder builder = DiscordClientBuilder.CreateDefault(Token, DiscordIntents.AllUnprivileged | DiscordIntents.MessageContents);
         builder.SetLogLevel(Microsoft.Extensions.Logging.LogLevel.Debug);
-        builder.ConfigureEventHandlers(                     // A bunch of generic D#+ stuff to initialise the bot and handle new messages, all
-            b => b.HandleMessageCreated(async (s, e) => {   // from the official guide btw: https://dsharpplus.github.io/DSharpPlus/index.html
-                if (!RelayingRSS) {
-                    if (e.Channel.Id == ChannelID) {
-                        Console.WriteLine($"\nMessage received: «{e.Message.Content}»");
-                        (string? eMessage, string? TenorGifUrl, float? GifDuration) = await GetTenorURLs(http, e.Message);
-                        var MD = new Markdown (e.Message) {
-                            Roles = Roles!,
-                            RolesReplace = RolesReplace!,
-                            TrimRoles = TrimRoles!,
-                            DefaultTitle = TitleDefault,
-                            Message = (eMessage == null) ? "[GIF]" : ReplaceDiscordJumpLinks(await ReplaceDiscordAngleBrackets(s, eMessage))
-                        };
-                        if (!Linking) {                     // Linking — connecting multiple Discord messages into a single RSS entry
-                            SetTimer(LinkingTime); Linking = true;
-                            Item Message = await MD.ParseMessage();
-                            Message.Link = XMLFile.Link + IdLink + Message.Timestamp;   // Later more than just timestamp will be supported hopefully :)
-                            var attachements = new List<Enclosure>();
-                            await DownloadAttachements(http, e, attachements);
-                            if (TenorGifUrl != null) {
-                                attachements.Insert(0, new Enclosure {
-                                    LocalUrl = "",
-                                    MediaUrl = TenorGifUrl,
-                                    Length = (int?)GifDuration ?? 0,
-                                    MediaType = "image/gif"
-                                });
+        if (Mode == 0 || Mode == 1) {
+            builder.ConfigureEventHandlers(                     // A bunch of generic D#+ stuff to initialise the bot and handle new messages, all
+                b => b.HandleMessageCreated(async (s, e) => {   // from the official guide btw: https://dsharpplus.github.io/DSharpPlus/index.html
+                    if (!RelayingRSS) {
+                        if (e.Channel.Id == ChannelID) {
+                            Console.WriteLine($"\nMessage received: «{e.Message.Content}»");
+                            (string? eMessage, string? TenorGifUrl, float? GifDuration) = await GetTenorURLs(http, e.Message);
+                            var MD = new Markdown (e.Message) {
+                                Roles = Roles!,
+                                RolesReplace = RolesReplace!,
+                                TrimRoles = TrimRoles!,
+                                DefaultTitle = TitleDefault,
+                                Message = (eMessage == null) ? "[GIF]" : ReplaceDiscordJumpLinks(await ReplaceDiscordAngleBrackets(s, eMessage))
+                            };
+                            if (!Linking) {                     // Linking — connecting multiple Discord messages into a single RSS entry
+                                SetTimer(LinkingTime); Linking = true;
+                                Item Message = await MD.ParseMessage();
+                                Message.Link = XMLFile.Link + IdLink + Message.Timestamp;   // Later more than just timestamp will be supported hopefully :)
+                                var attachements = new List<Enclosure>();
+                                await DownloadAttachements(http, e, attachements);
+                                if (TenorGifUrl != null) {
+                                    attachements.Insert(0, new Enclosure {
+                                        LocalUrl = "",
+                                        MediaUrl = TenorGifUrl,
+                                        Length = (int?)GifDuration ?? 0,
+                                        MediaType = "image/gif"
+                                    });
+                                }
+                                Message.Media = attachements;
+                                Feed!.Channel!.Items.Insert(0, Message);
+                            } else {
+                                Console.WriteLine("Timer closed!");
+                                LinkTimer!.Enabled = false; SetTimer(LinkingTime);
+                                Console.WriteLine("Adding this message to the previous post.");
+                                await DownloadAttachements(http, e, Feed!.Channel!.Items[0].Media);
+                                if (TenorGifUrl != null) {
+                                    Feed!.Channel!.Items[0].Media.Insert(0, new Enclosure {
+                                        LocalUrl = "",
+                                        MediaUrl = TenorGifUrl,
+                                        Length = (int?)GifDuration ?? 0,
+                                        MediaType = "image/gif"
+                                    });
+                                }
+                                Feed!.Channel.Items[0].Description = String.Concat(Feed.Channel.Items[0].Description, "<br>\n<br>\n", await Task.Run(() => MD.AddMessage()));
                             }
-                            Message.Media = attachements;
-                            Feed!.Channel!.Items.Insert(0, Message);
-                        } else {
-                            Console.WriteLine("Timer closed!");
-                            LinkTimer!.Enabled = false; SetTimer(LinkingTime);
-                            Console.WriteLine("Adding this message to the previous post.");
-                            await DownloadAttachements(http, e, Feed!.Channel!.Items[0].Media);
-                            if (TenorGifUrl != null) {
-                                Feed!.Channel!.Items[0].Media.Insert(0, new Enclosure {
-                                    LocalUrl = "",
-                                    MediaUrl = TenorGifUrl,
-                                    Length = (int?)GifDuration ?? 0,
-                                    MediaType = "image/gif"
-                                });
-                            }
-                            Feed!.Channel.Items[0].Description = String.Concat(Feed.Channel.Items[0].Description, "<br>\n<br>\n", await Task.Run(() => MD.AddMessage()));
+                            await XMLFile.PutDown(Feed);
                         }
-                        await XMLFile.PutDown(Feed);
                     }
                 }
-            }
-        ));
+            ));}
         return builder;
     }
 

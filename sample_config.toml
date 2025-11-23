@@ -21,6 +21,7 @@ prefer_config = true            # *Do you prefer to use the data in the config o
 [Local]
 media_folder = "media"          # *The folder to which all downloaded files will go; used for attachements in the feed
 rss_feed_file = "feed.xml"      # The file, where your RSS feed is stored
+relay_type = 0                  # *Type of relay: 0 = both ways, 1 = to RSS only, 2 = to Discord only, 3+ = no relay
 
 #                                 * — if you don't know what you are doing, just leave it as is, at its default value
 #                                ** — depends on the implementation of your RSS frontend, or even might be unnecessary
