@@ -15,7 +15,6 @@ namespace RSS{
         public async Task<RSS> UpdateFile(object _, FileSystemEventArgs e, RSS rss, string[] LinkArguments) {
             if (Program.RelayingRSS)
                 return null!;
-            Console.WriteLine("\nFile update received!");
             if (e.ChangeType != WatcherChangeTypes.Changed)
                 return null!;
             if (InWriting)
