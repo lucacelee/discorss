@@ -32,11 +32,11 @@ class Program
     private FileSystemWatcher? FeedWatcher;
     private string? TenorAPI;
     private int? Mode;
-    public const string Version = "1.2";
+    public const string Version = "1.2.1";
     static async Task Main(string[] args) {
         // Console.WriteLine("Hello, World!");
-        const string Version = "1.2";
-        string ConfigPath;
+        const string Version = "1.2.1";
+        string ConfigPath = "config.toml";
 
         if (args.Length == 0) {
             Console.WriteLine("No arguments are passed! Looking for 'config.toml' in the default directory!");
@@ -53,10 +53,12 @@ class Program
                                                                                      
                    A simple tool to link a Discord channel and an RSS feed.
         
-                   Use: $ discross (-h | --help) [config file path]
-                             -h | --help  —  display this message and exit.
-                             [config]     —  file path to your config file;
-                                             it must be a .toml file.
+                         Use: $ discross (-h)(-v) [config file path]
+
+                        -h or --help    —  display this message and exit.
+                        -v or --version —  print the version and exit.
+                        [config]        —  file path to your config file;
+                                                 it must be a .toml file.
                     If not specified, the app looks in its directory for a
                     'config.toml'. If that isn't present either, exit.
         
@@ -64,7 +66,10 @@ class Program
                     the program exists with a message, asking to specify it
 
                         discorss " + Version + "\n");
-                        return;                         // This is the help message you get when using the '-h' or '--help' argument
+                        Environment.Exit(0);            // This is the help message you get when using the '-h' or '--help' argument
+        } else if (args[0] == "--version" || args[0] == "-v") {
+            Console.WriteLine("discorss v" + Version);
+            Environment.Exit(0);
         } else {
             ConfigPath = args[0];
         }
@@ -73,6 +78,7 @@ class Program
         try {
             Table = ReadConfig(ConfigPath);
         } catch {
+            Console.WriteLine("Failed to read the config. Is the path invalid?");
             return;
         }
         List<string> TmpRoles = []; List<string> TmpRolesReplace = []; List<bool> TmpTrimRoles = [];
