@@ -1,5 +1,15 @@
 # discorss
 Discorss is a simple command line application that mirrors your specified Discord channel to an RSS feed. Unlike many other apps, discorss doesn't only send RSS updates to Discord, but _the other way as well!_ Discorss can automatically replace roles, set up proper titles and other XML elements and download images.
+
+### Contents:
+1. [Setting up](#setting-up)
+    1. [Sample Config File](#sample-config-file)
+    2. [Obtaining the Discord Token](#obtaining-the-discord-token)
+    3. [RSS Feed](#rss-feed)
+    4. [Tenor API](#tenor-api)
+2. [Running the Program](#running-the-program)
+    1. [Running in the background (systemd)](#running-in-the-background)
+3. [Building from Source](#building-from-source)
 ## Setting Up
 The repository includes a `sample_config.toml`, which contains all of the required information to run the program. The executable takes just **one** argument — the file path to the config file. *By default*, e.g. with zero arguments, it looks for `config.toml` in the directory, in which it is located. If it is not present, the program exits. Let's look at the sample config.
 ### Sample Config File
@@ -11,6 +21,7 @@ roles = ["@everyone"]
 inline_roles = ["everyone"]
 trim_roles = [true]
 linking_time = 180
+tenor_api_key = ""
 
 [RSS]
 title = ""
@@ -19,11 +30,14 @@ link = ""
 default = "Announcement for "
 
 rss_version = "2.0"
+message_link_format = ""
+id_xml_element = "timestamp"
 prefer_config = true
 
 [Local]
 media_folder = "media"
 rss_feed_file = "feed.xml"
+relay_type = 0
 ```
 In the sample config, you will find quite a diverse selection of nodes. We will go through each element and focus on the less intuitive ones.
 #### Discord
@@ -33,16 +47,20 @@ In the sample config, you will find quite a diverse selection of nodes. We will 
 * `inline_roles` is how you would like to represent the role when in text. For example: `@everyone` will turn to `everyone` when inside of a text block. This is done, so that the flow of text is more natural
 * `trim_roles` is a list of booleans, stating whether you want the role to be trimmed off the beginning of a message, if it is found there
 * `linking_time` is the time in __seconds__, for which if the message is sent within that timespan from another, it will be added onto the end of the previous one. Or, to put it simply, if a second message is sent within that timeframe after the first, they become one
+* `tenor_api_key` is an optional field for an API key for Tenor API, it is used to retrieve embedded GIFs from the 
 #### RSS
 * `title` the title of your feed
 * `description` the description of your feed
 * `link` the link to the **folder** in which your feed file is located. This is specifically **the folder**, so that any downloaded files have a proper destination and as a result, URL. This is the **website** link, e.g. `https://example.com/rss/`
 * `default` is the string that will be followed by the date and time in UTC and used as an RSS item's title, if one cannot be extracted from the message
 * `rss_version` is self explanatory. This *will not* change how the file is structured, so you probably shouldn't change it
+* `message_link_format` is how your RSS items are identified when linked; the value of this string is placed after the `link`. This depends on your frontend, but as an example, you can use something like "?id=", to get "https://example.com/rss/**?id=XXXXXXX**"
+* `id_xml_element` is the XML element used as an ID for the previous field. Currently, only `<timestamp>` is supported, so right now, you can only get item links with the UNIX timestamp as their ID
 * `prefer_config` is a boolean. If your config and your feed's title, link and description don't match, one is chosen based on this parameter
 #### Local
 * `media_folder` is the path to the folder, where all of your media is downloaded, which is mainly images. This path is **local**, relative to the folder, in which your <ins>RSS feed file is located</ins>. The media folder _must_ be in the same folder, as your feed file
 * `rss_feed_file` is the most important (along with `token`) one: it is the file path to your RSS feed. This path can be either local or global
+* `relay_type` is an integer value that determines the type of relay the program will perform. `0` is the default, it allows mirroring both ways (between RSS and Discord); `1` only allows mirroring from Discord to RSS, which can be useful if you have a different solution to route the data the other way; `2` does the opposite, it only sends data from the RSS feed to Discord; `3` and above allow no relay
 
 **Important:** every single filed in the config *must be filled out*, otherwise something will probably misfunction. **Also**, for the roles parameters: each one must match the one above/below it, as there is no way to mark which one corresponds to which otherwise.
 ### Obtaining the Discord Token
@@ -65,6 +83,8 @@ Now you want to add your bot to your server. Please go into the 'OAuth2' tab, wh
 Finally, click 'Copy' next to the generated link and paste it into your web browser. If will open Discord and prompt you about which server to add your bot to. You can figure the rest yourself.
 ### RSS Feed
 If you don't have an existing RSS feed, you don't need to worry. The program will generate one if it isn't present, yet you still **must include a file path** to where is is supposed to be in your config. Make sure that your feed is accessible through a URL, e.g. it is on the internet, and test it out with an RSS reader. I would recommend running this program on the same server, that you are hosting your feed, to reduce any possible latency and ensure that the updates are intact.
+### Tenor API
+Tenor API can be used to get GIFs that users embed when sending a message. If an API key is not provided, the Tenor link will be interpreted like any other link, but when it is present, the related image will be linked to in the feed. To get the key, go to [the Google for Developers page](https://developers.google.com/tenor/guides/quickstart), where in the __Setup__ section, you will find a button labelled `Get a Tenor API key`. Follow the instructions on the page to get the key, and paste it into the config file 
 ## Running the Program
 You have two options when it comes to running the program:
 1. Use the framework independant binary, that is provided in the 'Releases' section; or
