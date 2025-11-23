@@ -13,7 +13,7 @@ namespace Formatting {
         public string? CustomLinkRoot { get; set; }
 
         public string AddMessage() {
-            Message = FormatTimestamps(RemoveRoles()) + "\nBy: _" + M.Author!.Username + "_";
+            Message = FormatTimestamps(RemoveRoles()) + "<br>By: _" + M.Author!.Username + "_";
             return SetDescription();                             // I'm fairly certain that we won't get an authorless message
         }
 
@@ -28,7 +28,7 @@ namespace Formatting {
                 Origin = "Discord",
                 DiscordLink = M.JumpLink.ToString(),
                 Timestamp = Time.ToUnixTimeSeconds(),
-                PubDate = Time.UtcDateTime.ToString() + " UTC"
+                PubDate = Time.ToUniversalTime().ToString("dd MMMM yyyy HH:mm ") + "GMT"
             };
             Console.WriteLine($"The result of parsing the item.\nTitle: {Entry.Title}, author: {Entry.Author}, Description:\n'{Entry.Description}'");
             return Entry;
@@ -36,8 +36,10 @@ namespace Formatting {
 
         private string SetDescription () {
             Console.WriteLine("\nSetting the description of the message.");
-            if (Message.Length < 100 && Attachments && !Message.Contains('\n'))     // Why? Look down.
+            if (Message.Length < 100 && Attachments && !Message.Contains('\n')) {   // Why? Look down.
+                Console.WriteLine("Message is less than 100 characters long, has attachements and no newlines, erasing!");
                 return "";
+            }
             if (Message.Contains('\n')){
                 string FirstLine = Message.Split('\n')[0];
                 if (FirstLine.Length < 150)
@@ -45,6 +47,7 @@ namespace Formatting {
             }
             Message = FormatLikeXML(Message, false, CustomLinkRoot!);
             Message = String.Concat(Message[0].ToString().ToUpper(), Message[1..]);
+            Console.WriteLine("Description now:\n{0}", Message);
             return Message;
         }
 
@@ -53,13 +56,9 @@ namespace Formatting {
             var CleanMessage = FormatLikeXML(RemoveRoles(), true, CustomLinkRoot!);
             CleanMessage = String.Concat(CleanMessage[0].ToString().ToUpper(), CleanMessage[1..]);
             var FirstLine = CleanMessage.Split('\n')[0];
-            if (FirstLine.Contains('#'))
-                FirstLine = FirstLine.Replace('#', ' ');
             if (CleanMessage.Length < 100 && Attachments && !CleanMessage.Contains('\n'))
                 return CleanMessage.Trim();                                         // You see this here?
             else if (CleanMessage.Length < 150 && Message.Contains('\n'))           // It becomes the title
-                return FirstLine.Trim();
-            else if (FirstLine.Length < 150)
                 return FirstLine.Trim();
             else return String.Concat(DefaultTitle, TimeOffset.UtcDateTime, " UTC");
         }
