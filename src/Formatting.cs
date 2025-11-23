@@ -166,7 +166,7 @@ namespace Formatting {
                 Replacement = "<a href=\"https://${Link}\">https://${Link}</a>"
             });
             Strings.Add(new Text {
-                Pattern = @"(\[)(?<Title>.*)(\])(\()(?<Link>.*?)(\))",
+                Pattern = @"(\[)(?<Title>.*?)(\])(\()(?<Link>.*?)(\))",
                 Replacement = "<a href=\"${Link}\">${Title}</a>"
             });
             Strings.Add(new Text {
