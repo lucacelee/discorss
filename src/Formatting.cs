@@ -280,8 +280,15 @@ namespace Formatting {
 
         private static string Reformat(string Message) {
             string UrlRegexString = @"<a\s+href=""(?<URL>[^""]+)""\s*>(?<Title>[^<]+)</a>";
+
             Message = Regex.Replace(Message, UrlRegexString, @"[${Title}](${URL})");
-            return Message.Replace("<u>", "__").Replace("</u>", "__").Replace("<b>", "**").Replace("</b>", "**").Replace("<i>", "*").Replace("</i>", "*").Replace("<s>", "~~").Replace("</s>", "~~").Replace("<code>", "`").Replace("</code>", "`").Replace("<h1>", "## ").Replace("</h1>", "").Replace("<h2>", "### ").Replace("</h2>", "").Replace("<h3>", "#### ").Replace("</h3>", "").Replace("\n", "").Replace("<br>", "\n");
+            Message = Message.Replace("<ul>", "").Replace("</ul>", "<br><br>").Replace("</ol>", "<br><br>").Replace("<li>", "<br>- ").Replace("</li>", "").Trim();
+            Console.WriteLine("Message in the middle of reformatting:\n{0}", Message);
+
+            Message = Message.Replace("<u>", "__").Replace("</u>", "__").Replace("<b>", "**").Replace("</b>", "**").Replace("<i>", "*").Replace("</i>", "*").Replace("<s>", "~~").Replace("</s>", "~~").Replace("<code>", "`").Replace("</code>", "`").Replace("<h1>", "## ").Replace("</h1>", "").Replace("<h2>", "### ").Replace("</h2>", "").Replace("<h3>", "#### ").Replace("</h3>", "").Replace("\n", "").Replace("<br>", "\n");
+            Message = Message.Replace("<ol>  \n-", "1.");
+            Console.WriteLine("Message after reformatting:\n{0}", Message);
+            return Message;
         }
     }
 }
