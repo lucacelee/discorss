@@ -8,6 +8,7 @@ using DSharpPlus.Entities;
 using System.Text.Json.Serialization;
 using System.Net.Http.Json;
 using System.Linq.Expressions;
+using Microsoft.VisualBasic;
 
 class Program
 {
@@ -181,7 +182,7 @@ class Program
                             RolesReplace = RolesReplace!,
                             TrimRoles = TrimRoles!,
                             DefaultTitle = TitleDefault,
-                            Message = (eMessage == null) ? "[GIF]" : ReplaceDiscordJumpLinks(eMessage)
+                            Message = (eMessage == null) ? "[GIF]" : ReplaceDiscordJumpLinks(await ReplaceDiscordAngleBrackets(s, eMessage))
                         };
                         if (!Linking) {                     // Linking — connecting multiple Discord messages into a single RSS entry
                             SetTimer(LinkingTime); Linking = true;
@@ -287,6 +288,24 @@ class Program
             }
         }
         return (Message, null, null);
+    }
+
+    private async Task<string> ReplaceDiscordAngleBrackets (DiscordClient s, string Message) {
+        string UserRegex = @"<@(?<User>\d+)>";
+        string ChannelRegex = @"<#(?<Channel>\d+)>";
+
+        foreach (Match T in Regex.Matches(Message, UserRegex)) {
+            ulong UserID = ulong.Parse(T.Result("${User}"));
+            var User = await s.GetUserAsync(UserID);
+            Message = Message.Replace("<@" + UserID + ">", "@" + User.Username);
+        }
+
+        foreach (Match T in Regex.Matches(Message, ChannelRegex)) {
+            ulong ChannelID = ulong.Parse(T.Result("${Channel}"));
+            var Channel = await s.GetChannelAsync(ChannelID);
+            Message = Message.Replace("<#" + ChannelID + ">", "#" + Channel.Name);
+        }
+        return Message;
     }
 
     private string ReplaceDiscordJumpLinks (string Message) {
