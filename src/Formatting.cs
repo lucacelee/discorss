@@ -154,34 +154,44 @@ namespace Formatting {
                     Replacement = @"${Body}"
                 });
             }
+            Strings.Add(new Text {                                                  // Adding a <br> to the beginning of a string if it begins with a list
+                Pattern = @"^(?'Body'((<br>)?\d+?\.{1}\s+.+\n?)+)",
+                Replacement = "<br>${Body}"
+            });
+            Strings.Add(new Text {
+                Pattern = @"^(?'Body'((<br>)?[-*]\s+.+\n?)+)",
+                Replacement = "<br>${Body}"
+            });
+            Strings.Add(new Text {                                                  // Matching an ordered list
+                Pattern = @"(?'Body'((<br>)?\d+?\.{1}\s+.+\n?)+)",
+                Replacement = "<ol>\n${Body}\n</ol>"
+            });
+            Strings.Add(new Text {                                                  // Matching an unordered list 
+                Pattern = @"(?'Body'((<br>)?[-*]\s+.+\n?)+)",
+                Replacement = "<ul>\n${Body}\n</ul>"
+            });
+            Strings.Add(new Text {
+                Pattern = @"<br>([-*]|\d+?\.{1})\s(?'Item'.+)",
+                Replacement = "  <li>${Item}</li>"
+            });
             Strings.Add(new Text {                                                  // Matching a Discord jump link
                 Pattern = @"(?<!.*\[.+\]\()https://discord.com/channels/(?<CustomLink>\d+/\d+/\d+)(?:\b|$)",
-                Onset = "",
-                Coda = "",
                 Replacement = "[[Discord Link!]](https://discord.com/channels/${CustomLink})"
             });
             Strings.Add(new Text {                                                  // Matching a link
                 Pattern = @"(?<!.*\[.+\]\()https://(?<Link>.+?\.[\d\w\./\?=-]+)(?:\b|$)",
-                Onset = "",
-                Coda = "",
                 Replacement = "<a href=\"https://${Link}\">https://${Link}</a>"
             });
             Strings.Add(new Text {
                 Pattern = @"(\[)(?<Title>.*)(\])(\()(?<Link>.*)(\))",
-                Onset = "",
-                Coda = "",
                 Replacement = "<a href=\"${Link}\">${Title}</a>"
             });
             Strings.Add(new Text {
                 Pattern = @"(\*){3}(?<Body1>.*)(\*){2}(?<Body2>.*)(\*){1}",
-                Onset = "",
-                Coda = "",
                 Replacement = iOnset + bOnset + @"${Body1}" + bCoda + "${Body2}" + iCoda
             });
             Strings.Add(new Text {
                 Pattern = @"(\*){1}(?<Body1>.*)(\*){2}(?<Body2>.*)(\*){3}",
-                Onset = "",
-                Coda = "",
                 Replacement = iOnset + @"${Body1}" + bOnset + "${Body2}" + bCoda + iCoda
             });
             Strings.Add(new Text {
@@ -246,15 +256,16 @@ namespace Formatting {
             });
             foreach (var Extract in Strings)
                 Message = Extract.Replace(Message);
+            Message = Message.Replace("</li>\n\n</ol>", "</li>\n</ol>").Replace("</li>\n\n</ul>", "</li>\n</ul>").Replace("</ol><br>", "</ol>").Replace("</ul><br>", "</ul>");
             return Message;
         }
     }
 
     class Text {
         public required string Pattern;
-        public required string Onset;
-        public required string Coda;
-        public required string Replacement;
+        public string? Onset;
+        public string? Coda;
+        public string? Replacement;
 
         public string Replace(string Message) {
             return Regex.Replace(Message, Pattern, Onset + Replacement + Coda);
