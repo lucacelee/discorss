@@ -263,12 +263,14 @@ namespace Formatting {
 
     public class Markup {
         public static string Format(string Description, string Title, string Author) {
-            string Header = "# " + Title + "\n";
+            string Header = "# " + Reformat(Title) + "\n";
             string Body = Reformat(Description);
-            return String.Concat(Header, Body, "\nBy: ", Author);
+            return String.Concat(Header, Body, "\n-# By: _", Author, "_");
         }
 
         private static string Reformat(string Message) {
+            string UrlRegexString = @"<a\s+href=""(?<URL>[^""]+)""\s*>(?<Title>[^<]+)</a>";
+            Message = Regex.Replace(Message, UrlRegexString, @"[${Title}](${URL})");
             return Message.Replace("<u>", "__").Replace("</u>", "__").Replace("<b>", "**").Replace("</b>", "**").Replace("<i>", "*").Replace("</i>", "*").Replace("<s>", "~~").Replace("</s>", "~~").Replace("<code>", "`").Replace("</code>", "`").Replace("<h1>", "## ").Replace("</h1>", "").Replace("<h2>", "### ").Replace("</h2>", "").Replace("<h3>", "#### ").Replace("</h3>", "").Replace("\n", "").Replace("<br>", "\n");
         }
     }
