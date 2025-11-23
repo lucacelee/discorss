@@ -30,7 +30,7 @@ namespace Formatting {
                 Timestamp = Time.ToUnixTimeSeconds(),
                 PubDate = Time.ToUniversalTime().ToString("dd MMMM yyyy HH:mm ") + "GMT"
             };
-            Console.WriteLine($"The result of parsing the item.\nTitle: {Entry.Title}, author: {Entry.Author}, Description:\n'{Entry.Description}'");
+            Console.WriteLine($"\nThe result of parsing the item.\nTitle: {Entry.Title}, author: {Entry.Author}, Description:\n'{Entry.Description}'");
             return Entry;
         }
 
@@ -42,8 +42,10 @@ namespace Formatting {
             }
             if (Message.Contains('\n')){
                 string FirstLine = Message.Split('\n')[0];
-                if (FirstLine.Length < 150)
-                    Message = Message.Replace(FirstLine + "\n", "");
+                if (FirstLine.Length < 150){
+                    Regex Rgx = new(Regex.Escape(FirstLine + "\n"));
+                    Message = Rgx.Replace(Message, "", 1);
+                }
             }
             Message = FormatLikeXML(Message, false, CustomLinkRoot!);
             Message = String.Concat(Message[0].ToString().ToUpper(), Message[1..]);
@@ -59,6 +61,8 @@ namespace Formatting {
             if (CleanMessage.Length < 100 && Attachments && !CleanMessage.Contains('\n'))
                 return CleanMessage.Trim();                                         // You see this here?
             else if (CleanMessage.Length < 150 && Message.Contains('\n'))           // It becomes the title
+                return FirstLine.Trim();
+            else if (FirstLine.Length < 150)
                 return FirstLine.Trim();
             else return String.Concat(DefaultTitle, TimeOffset.UtcDateTime, " UTC");
         }
@@ -153,36 +157,16 @@ namespace Formatting {
                     Replacement = @"${Body}"
                 });
             }
-            Strings.Add(new Text {                                                  // Adding a <br> to the beginning of a string if it begins with a list
-                Pattern = @"^(?'Body'((<br>)?\d+?\.{1}\s+.+\n?)+)",
-                Replacement = "<br>${Body}"
-            });
-            Strings.Add(new Text {
-                Pattern = @"^(?'Body'((<br>)?[-*]\s+.+\n?)+)",
-                Replacement = "<br>${Body}"
-            });
-            Strings.Add(new Text {                                                  // Matching an ordered list
-                Pattern = @"(?'Body'((<br>)?\d+?\.{1}\s+.+\n?)+)",
-                Replacement = "<ol>\n${Body}\n</ol>"
-            });
-            Strings.Add(new Text {                                                  // Matching an unordered list 
-                Pattern = @"(?'Body'((<br>)?[-*]\s+.+\n?)+)",
-                Replacement = "<ul>\n${Body}\n</ul>"
-            });
-            Strings.Add(new Text {
-                Pattern = @"<br>([-*]|\d+?\.{1})\s(?'Item'.+)",
-                Replacement = "  <li>${Item}</li>"
-            });
             Strings.Add(new Text {                                                  // Matching a Discord jump link
                 Pattern = @"(?<!.*\[.+\]\()https://discord.com/channels/(?<CustomLink>\d+/\d+/\d+)(?:\b|$)",
                 Replacement = "[[Discord Link!]](https://discord.com/channels/${CustomLink})"
             });
             Strings.Add(new Text {                                                  // Matching a link
-                Pattern = @"(?<!.*\[.+\]\()https://(?<Link>.+?\.[\d\w\./\?=-]+)(?:\b|$)",
+                Pattern = @"(?<!.*\[.+\]\()https://(?<Link>.+?\.[\d\w\./\?:=-]+)(?:\b|$)",
                 Replacement = "<a href=\"https://${Link}\">https://${Link}</a>"
             });
             Strings.Add(new Text {
-                Pattern = @"(\[)(?<Title>.*)(\])(\()(?<Link>.*)(\))",
+                Pattern = @"(\[)(?<Title>.*)(\])(\()(?<Link>.*)(^\s)(\))",
                 Replacement = "<a href=\"${Link}\">${Title}</a>"
             });
             Strings.Add(new Text {
@@ -253,6 +237,34 @@ namespace Formatting {
                 Coda = jCoda,
                 Replacement = @"${Body}"
             });
+            Strings.Add(new Text {                                                  // Adding a <br> to the beginning of a string if it begins with a list
+                Pattern = @"^(?'Body'((<br>)?\d+?\.{1}\s+.+\n?)+)",
+                Replacement = "<br>${Body}"
+            });
+            Strings.Add(new Text {
+                Pattern = @"^(?'Body'((<br>)?[-*]\s+.+\n?)+)",
+                Replacement = "<br>${Body}"
+            });
+            Strings.Add(new Text {                                                  // Matching an ordered list
+                Pattern = @"(?'Body'(<br>\d+?\.{1}\s+.+\n?)+)",
+                Replacement = "<ol>\n${Body}\n</ol>"
+            });
+            Strings.Add(new Text {                                                  // Matching an unordered list 
+                Pattern = @"(?'Body'(<br>[-*]\s+.+\n?)+)",
+                Replacement = "<ul>\n${Body}\n</ul>"
+            });
+            Strings.Add(new Text {
+                Pattern = @"<br>([-*]|\d+?\.{1})\s(?'Item'.+)",
+                Replacement = "  <li>${Item}</li>"
+            });
+            Strings.Add(new Text {
+                Pattern = @"^\n<br>",
+                Replacement = ""
+            });
+            // Strings.Add(new Text {                                               // Maybe for a later day
+            //     Pattern = @"<br>\n<br>(?<Main>.+)\n<br>",
+            //     Replacement = "<p>\n${Main}</p>\n<br>"
+            // });
             foreach (var Extract in Strings)
                 Message = Extract.Replace(Message);
             Message = Message.Replace("</li>\n\n</ol>", "</li>\n</ol>").Replace("</li>\n\n</ul>", "</li>\n</ul>").Replace("</ol><br>", "</ol>").Replace("</ul><br>", "</ul>");
@@ -264,7 +276,7 @@ namespace Formatting {
         public required string Pattern;
         public string? Onset;
         public string? Coda;
-        public string? Replacement;
+        public required string Replacement;
 
         public string Replace(string Message) {
             return Regex.Replace(Message, Pattern, Onset + Replacement + Coda);
