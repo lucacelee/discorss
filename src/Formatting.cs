@@ -14,7 +14,7 @@ namespace Formatting {
 
         public string AddMessage() {
             Message = FormatTimestamps(RemoveRoles()) + "<br>By: _" + M.Author!.Username + "_";
-            return SetDescription();                             // I'm fairly certain that we won't get an authorless message
+            return SetDescription(true);                             // I'm fairly certain that we won't get an authorless message
         }
 
         public async Task<Item> ParseMessage() {
@@ -22,7 +22,7 @@ namespace Formatting {
             Message = FormatTimestamps(RemoveRoles()); // Same here
             Item Entry = new() {
                 Title = await Task.Run(() => SetTitle(Time)),
-                Description = await Task.Run(() => SetDescription()),
+                Description = await Task.Run(() => SetDescription(false)),
                 Author = M.Author!.Username,
                 Media = [],
                 Origin = "Discord",
@@ -34,13 +34,13 @@ namespace Formatting {
             return Entry;
         }
 
-        private string SetDescription () {
+        private string SetDescription (bool Adding) {
             Console.WriteLine("\nSetting the description of the message.");
-            if (Message.Length < 100 && Attachments && !Message.Contains('\n')) {   // Why? Look down.
+            if (Message.Length < 100 && Attachments && !Message.Contains('\n') && !Adding) {   // Why? Look down.
                 Console.WriteLine("Message is less than 100 characters long, has attachements and no newlines, erasing!");
                 return "";
             }
-            if (Message.Contains('\n')){
+            if (Message.Contains('\n') && !Adding){
                 string FirstLine = Message.Split('\n')[0];
                 if (FirstLine.Length < 150){
                     Regex Rgx = new(Regex.Escape(FirstLine + "\n"));
