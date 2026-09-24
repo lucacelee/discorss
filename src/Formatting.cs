@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using DSharpPlus.Net.Models;
 using RSS;
 
 namespace Formatting {
@@ -57,6 +58,12 @@ namespace Formatting {
             Console.WriteLine("\nSetting the title of the item.");
             var CleanMessage = FormatLikeXML(RemoveRoles(), true, CustomLinkRoot!);
             CleanMessage = String.Concat(CleanMessage[0].ToString().ToUpper(), CleanMessage[1..]);
+            foreach (string Role in Roles) {
+                if (Message.StartsWith(Role + "\n")) {
+                    var regex = new Regex(Regex.Escape(Role + "\n"));
+                    CleanMessage = regex.Replace(Message, "", 1);
+                }
+            }
             var FirstLine = CleanMessage.Split('\n')[0];
             if (CleanMessage.Length < 100 && Attachments && !CleanMessage.Contains('\n'))
                 return CleanMessage.Trim();                                         // You see this here?
