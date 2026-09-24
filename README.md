@@ -47,14 +47,14 @@ In the sample config, you will find quite a diverse selection of nodes. We will 
 * `inline_roles` is how you would like to represent the role when in text. For example: `@everyone` will turn to `everyone` when inside of a text block. This is done, so that the flow of text is more natural
 * `trim_roles` is a list of booleans, stating whether you want the role to be trimmed off the beginning of a message, if it is found there
 * `linking_time` is the time in __seconds__, for which if the message is sent within that timespan from another, it will be added onto the end of the previous one. Or, to put it simply, if a second message is sent within that timeframe after the first, they become one
-* `tenor_api_key` is an optional field for an API key for Tenor API, it is used to retrieve embedded GIFs from the 
+* `klipy_api_key` is an optional field for an API key for Klipy API, it is used to retrieve embedded GIFs from messages
 #### RSS
 * `title` the title of your feed
 * `description` the description of your feed
 * `link` the link to the **folder** in which your feed file is located. This is specifically **the folder**, so that any downloaded files have a proper destination and as a result, URL. This is the **website** link, e.g. `https://example.com/rss/`
 * `default` is the string that will be followed by the date and time in UTC and used as an RSS item's title, if one cannot be extracted from the message
 * `rss_version` is self explanatory. This *will not* change how the file is structured, so you probably shouldn't change it
-* `message_link_format` is how your RSS items are identified when linked; the value of this string is placed after the `link`. This depends on your frontend, but as an example, you can use something like "?id=", to get "https://example.com/rss/**?id=XXXXXXX**"
+* `message_link_format` is how your RSS items are identified when linked; the value of this string is placed after the `link`. This depends on your frontend, but as an example, you can use something like "?id=", to get "https://example.com/rss/​**?id=XXXXXXX**​"
 * `id_xml_element` is the XML element used as an ID for the previous field. Currently, only `<timestamp>` is supported, so right now, you can only get item links with the UNIX timestamp as their ID
 * `prefer_config` is a boolean. If your config and your feed's title, link and description don't match, one is chosen based on this parameter
 #### Local
@@ -83,8 +83,10 @@ Now you want to add your bot to your server. Please go into the 'OAuth2' tab, wh
 Finally, click 'Copy' next to the generated link and paste it into your web browser. If will open Discord and prompt you about which server to add your bot to. You can figure the rest yourself.
 ### RSS Feed
 If you don't have an existing RSS feed, you don't need to worry. The program will generate one if it isn't present, yet you still **must include a file path** to where is is supposed to be in your config. Make sure that your feed is accessible through a URL, e.g. it is on the internet, and test it out with an RSS reader. I would recommend running this program on the same server, that you are hosting your feed, to reduce any possible latency and ensure that the updates are intact.
-### Tenor API
-Tenor API can be used to get GIFs that users embed when sending a message. If an API key is not provided, the Tenor link will be interpreted like any other link, but when it is present, the related image will be linked to in the feed. To get the key, go to [the Google for Developers page](https://developers.google.com/tenor/guides/quickstart), where in the __Setup__ section, you will find a button labelled `Get a Tenor API key`. Follow the instructions on the page to get the key, and paste it into the config file 
+### Klipy API
+Klipy API can be used to get GIFs that users embed when sending a message. If an API key is not provided, the Klipy link will be interpreted like any other link, but when it is present, the related image will be linked to in the feed. To get the key, go to [the Klipy API Getting Started page](https://docs.klipy.com/getting-started) and follow the steps on the page. You will have to go to the _Partner Panel_ and create a new API key, that you will then need to put in the config file.
+
+!["bot" is the rightmost column](assets/klipy-partner-apikeys.png)
 ## Running the Program
 You have two options when it comes to running the program:
 1. Use the framework independant binary, that is provided in the 'Releases' section; or
