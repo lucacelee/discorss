@@ -33,7 +33,6 @@ class Program
     public const string Version = "1.3";
     static async Task Main(string[] args) {
         // Console.WriteLine("Hello, World!");
-        const string Version = "1.2.1";
         string ConfigPath = "config.toml";
 
         if (args.Length == 0) {
