@@ -7,9 +7,11 @@ using Tommy;
 using DSharpPlus.Entities;
 using System.Text.Json.Serialization;
 using System.Net.Http.Json;
+using System.Text.Json;
 using System.Linq.Expressions;
 using Microsoft.VisualBasic;
 using System.Runtime.CompilerServices;
+using System.Net.Http.Headers;
 
 class Program
 {
@@ -103,7 +105,7 @@ class Program
             TrimRoles = TmpTrimRoles,
             IdLink = Table["RSS"]["message_link_format"],
             XmlIdElement = Table["RSS"]["id_xml_element"],
-            TenorAPI = Table["Discord"]["tenor_api_key"],
+            TenorAPI = Table["Discord"]["klipy_api_key"],
             Mode = Table["Local"]["relay_type"]
         };
         
@@ -296,18 +298,32 @@ class Program
     private async Task<(string?, string?, float?)> GetTenorURLs (HttpClient http, DSharpPlus.Entities.DiscordMessage M) {
         string Message = M.Content;
         if (TenorAPI != null) {
-            var TenorRegex = new Regex(@"^https://tenor.com/view/(?<GIF>.+)$");
-            Console.WriteLine("Getting Tenor GIFs... Match? {0}", TenorRegex.IsMatch(Message));
+            var TenorRegex = new Regex(@"^https://klipy.com/gifs/(?<GIF>.+)$");
+            Console.WriteLine("Getting Klipy GIFs... Match? {0}", TenorRegex.IsMatch(Message));
             try {
                 if (TenorRegex.IsMatch(Message)) {
                     Console.WriteLine("It was empty!");
-                    var Fugi = TenorRegex.Match(Message);
-                    string TenorApiUrl = "https://tenor.googleapis.com/v2/posts?" + "&key=" + TenorAPI + "&client_ley=discorss&ids=" + Fugi.Result(@"${GIF}").Split('-')[^1];
-                    var Response = await http.GetFromJsonAsync<JSON.Response>(TenorApiUrl);
-                    string? Url = Response!.Results![0].MediaFormats!.Gif!.Url!;
-                    float? Duration = Response!.Results![0].MediaFormats!.Gif!.Duration!;
-                    Console.WriteLine("Got Tenor URL, here is the result:\n{0}", Url);
-                    return (null, Url, Duration);
+                    var Slug = TenorRegex.Match(Message);
+                    string TenorApiUrl = "https://api.klipy.com/api/v1/"+ TenorAPI + "/gifs/items?slugs=" + Slug.Result(@"${GIF}"); //.Split('-')[^1]
+                    var Request = new HttpRequestMessage(HttpMethod.Get, TenorApiUrl);
+                    var Content = new StringContent(string.Empty);
+                    Content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
+                    Request.Content = Content;
+                    var Response = await http.SendAsync(Request);
+                    Response.EnsureSuccessStatusCode();
+                    string ResponseBody = await Response.Content.ReadAsStringAsync();
+                    using var Document = JsonDocument.Parse(ResponseBody);
+                    string? Url = Document.RootElement
+                                    .GetProperty("data")
+                                    .GetProperty("data")[0]
+                                    .GetProperty("file")
+                                    .GetProperty("hd")
+                                    .GetProperty("gif")
+                                    .GetProperty("url")
+                                    .GetString();
+                    // float? Duration = Response!.Results![0].MediaFormats!.Gif!.Duration!;
+                    Console.WriteLine("Got Klipy URL, here is the result:\n{0}", Url);
+                    return (null, Url, 0);
                 }
             }
             catch (Exception ex) {
