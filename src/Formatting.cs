@@ -14,13 +14,13 @@ namespace Formatting {
         public string? CustomLinkRoot { get; set; }
 
         public string AddMessage() {
-            Message = "By: _" + M.Author!.Username + "_<br>" + FormatTimestamps(RemoveRoles());
+            Message = "By: _" + M.Author!.Username + "_<br>" + FormatTimestamps(RemoveRoles(Message));
             return SetDescription(true);                             // I'm fairly certain that we won't get an authorless message
         }
 
         public async Task<Item> ParseMessage() {
             Attachments = (M.Attachments.Count > 0); var Time = M.Timestamp; DefaultTitle = DefaultTitle.Trim() + " ";
-            Message = FormatTimestamps(RemoveRoles()); // Same here
+            Message = FormatTimestamps(Message); // Same here
             Item Entry = new() {
                 Title = await Task.Run(() => SetTitle(Time)),
                 Description = await Task.Run(() => SetDescription(false)),
@@ -36,6 +36,14 @@ namespace Formatting {
         }
 
         private string SetDescription (bool Adding) {
+            String Message = this.Message;
+            Roles.ForEach((r) => {
+                if (Message.StartsWith(r)) {
+                    var StartingRole = new Regex(String.Concat(Regex.Escape(r), @"\s*\n"));
+                    Message = StartingRole.Replace(Message, "", 1).Trim();
+                };
+            });
+            Message = RemoveRoles(Message);
             Console.WriteLine("\nSetting the description of the message.");
             if (Message.Length < 100 && Attachments && !Message.Contains('\n') && !Adding) {   // Why? Look down.
                 Console.WriteLine("Message is less than 100 characters long, has attachements and no newlines, erasing!");
@@ -56,25 +64,27 @@ namespace Formatting {
 
         private string SetTitle (DateTimeOffset TimeOffset) {
             Console.WriteLine("\nSetting the title of the item.");
-            var CleanMessage = FormatLikeXML(RemoveRoles(), true, CustomLinkRoot!);
+            string CleanMessage = Message;
+            Roles.ForEach((r) => {
+                if (Message.StartsWith(r)) {
+                    var StartingRole = new Regex(String.Concat(Regex.Escape(r), @"\s*\n"));
+                    CleanMessage = StartingRole.Replace(Message, "", 1).Trim();
+                };
+            });
+            CleanMessage = FormatLikeXML(RemoveRoles(CleanMessage), true, CustomLinkRoot!);
             CleanMessage = String.Concat(CleanMessage[0].ToString().ToUpper(), CleanMessage[1..]);
-            foreach (string Role in Roles) {
-                if (Message.StartsWith(Role + "\n")) {
-                    var regex = new Regex(Regex.Escape(Role + "\n"));
-                    CleanMessage = regex.Replace(Message, "", 1);
-                }
-            }
             var FirstLine = CleanMessage.Split('\n')[0];
+            Console.WriteLine("The title is: '" + FirstLine + "'");
             if (CleanMessage.Length < 100 && Attachments && !CleanMessage.Contains('\n'))
                 return CleanMessage.Trim();                                         // You see this here?
             else if (CleanMessage.Length < 150 && Message.Contains('\n'))           // It becomes the title
                 return FirstLine.Trim();
             else if (FirstLine.Length < 150)
                 return FirstLine.Trim();
-            else return String.Concat(DefaultTitle, TimeOffset.UtcDateTime, " UTC");
+            else return String.Concat(DefaultTitle, TimeOffset.UtcDateTime.ToString("dddd, dd MMMM yyyy HH:mm"), " GMT");
         }
 
-        private string RemoveRoles() {
+        private string RemoveRoles(string Message) {
             Console.WriteLine("\nRemoving Discord roles from the string.");
             foreach (string Role in Roles) {
                 if (TrimRoles[Roles.IndexOf(Role)]){
