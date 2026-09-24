@@ -6,11 +6,7 @@ using DSharpPlus;
 using Tommy;
 using DSharpPlus.Entities;
 using System.Text.Json.Serialization;
-using System.Net.Http.Json;
 using System.Text.Json;
-using System.Linq.Expressions;
-using Microsoft.VisualBasic;
-using System.Runtime.CompilerServices;
 using System.Net.Http.Headers;
 
 class Program
