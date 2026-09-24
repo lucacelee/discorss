@@ -242,7 +242,7 @@ class Program
                                         MediaType = "image/gif"
                                     });
                                 }
-                                Feed!.Channel.Items[0].Description = String.Concat(Feed.Channel.Items[0].Description, "<br><hr><br>\n", await Task.Run(() => MD.AddMessage()));
+                                Feed!.Channel.Items[0].Description = String.Concat(Feed.Channel.Items[0].Description, "\n<hr>\n", await Task.Run(() => MD.AddMessage()));
                             }
                             await XMLFile.PutDown(Feed);
                         }

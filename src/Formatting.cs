@@ -13,7 +13,7 @@ namespace Formatting {
         public string? CustomLinkRoot { get; set; }
 
         public string AddMessage() {
-            Message = FormatTimestamps(RemoveRoles()) + "<br>By: _" + M.Author!.Username + "_";
+            Message = "By: _" + M.Author!.Username + "_<br>" + FormatTimestamps(RemoveRoles());
             return SetDescription(true);                             // I'm fairly certain that we won't get an authorless message
         }
 
