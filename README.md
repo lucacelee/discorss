@@ -1,5 +1,5 @@
-# discorss
-Discorss is a simple command line application that mirrors your specified Discord channel to an RSS feed. Unlike many other apps, discorss doesn't only send RSS updates to Discord, but _the other way as well!_ Discorss can automatically replace roles, set up proper titles and other XML elements and download images.
+# discsyndication
+discsyndication is a simple command line application that mirrors your specified Discord channel to an RSS feed. Unlike many other apps, discsyndication doesn't only send RSS updates to Discord, but _the other way as well!_ discsyndication can automatically replace roles, set up proper titles and other XML elements and download images.
 
 ### Contents:
 1. [Setting up](#setting-up)
@@ -91,8 +91,8 @@ You have two options when it comes to running the program:
 2. Clone the repository and use `dotnet run` from the terminal when in the project folder
 For the second option, and in order to build the app, you will need to have **.NET 9 SDK** installed on your system, which you can find at [Microsoft's website](https://dotnet.microsoft.com/en-us/download).
 ``` bash
-git clone https://github.com/lucacelee/discorss.git
-cd discorss
+git clone https://github.com/lucacelee/discsyndication.git
+cd discsyndication
 dotnet run
 ```
 ### Running in the background
@@ -101,13 +101,13 @@ Unless your server is running with a <ins>desktop enviroment</ins>, you will hav
 ps -p 1 -o comm=
 # if the output is 'systemd', then it's systemd
 ```
-To make **discorss** start automatically on boot, you will have to create a *systemd unit*. Creating one isn't too difficult, you merely need to place a file in the `/etc/systemd/system` called `[yourname].service` and specify the parameters. You can search online and learn everything about how systemd works, but for the purposes of this guide, I created a simple `discorss.service` file that should work right away.
+To make **discsyndication** start automatically on boot, you will have to create a *systemd unit*. Creating one isn't too difficult, you merely need to place a file in the `/etc/systemd/system` called `[yourname].service` and specify the parameters. You can search online and learn everything about how systemd works, but for the purposes of this guide, I created a simple `discsyndication.service` file that should work right away.
 ``` ini
 [Unit]
-Description=discorss
+Description=discsyndication
 
 [Service]
-ExecStart=/usr/local/bin/discorss /usr/local/etc/discorss.toml
+ExecStart=/usr/local/bin/discsyndication /usr/local/etc/discsyndication.toml
 Type=idle
 Restart=on-failure
 StandardOutput=journal
@@ -116,29 +116,29 @@ StandardError=journal
 [Install]
 WantedBy=multi-user.target
 ```
-I would recommend placing the `discorss` file separate from the web content, so that nobody can access it from the internet, preferably in `/usr/local/bin/`, which is conventionally the folder for user installed apps. The type is `idle` to make sure that it is run after everything else, but you, of course, can modify this file as you please. To enable the service, you need to execute the following commands:
+I would recommend placing the `discsyndication` file separate from the web content, so that nobody can access it from the internet, preferably in `/usr/local/bin/`, which is conventionally the folder for user installed apps. The type is `idle` to make sure that it is run after everything else, but you, of course, can modify this file as you please. To enable the service, you need to execute the following commands:
 ``` bash
 $ sudo systemctl daemon-reload
-$ sudo systemctl enable discorss.service
+$ sudo systemctl enable discsyndication.service
 # Checking if it is enabled
-$ sudo systemctl is-enabled discorss.service
+$ sudo systemctl is-enabled discsyndication.service
 enabled
 
 # To optionally enable the service right away:
-$ sudo systemctl start discorss.service
+$ sudo systemctl start discsyndication.service
 ```
-Now the **discorss** should automatically start each time the server restarts and constntly run in the background :D
+Now the **discsyndication** should automatically start each time the server restarts and constntly run in the background :D
 
 If you want to restart the service if you, for example, changed the config, you can execute the following command, which will restart the systemd service:
 ``` bash
-sudo systemctl restart discorss.service
+sudo systemctl restart discsyndication.service
 ```
 To all Windows users — you can toggle automatic launch for executables in the *control panel* or the new *settings* app. Just search for it and you will find the correct setting somewhere.
 ## Building from source
 To build the app, you need, as I mentioned in the previous section, the **.NET 9 SDK** installed on your system, which you can find at [Microsoft's website](https://dotnet.microsoft.com/en-us/download). Once you have ensured you have that by either installing, or using `dotnet --version` in your terminal, clone the repository with Git, then `cd` into it and run `dotnet publish` to create a framework-dependant binary, or `dotnet publish --self-contained` to create a binary, that can be used without .NET installed on one's system.
 ``` bash
-git clone https://github.com/lucacelee/discorss.git
-cd discorss
+git clone https://github.com/lucacelee/discsyndication.git
+cd discsyndication
 dotnet publish -r [os] --sc -c Release /p:PublishSingleFile=true
 ```
 If you with to compile the program for a defferent OS, replace [os] with either a different identifier. The ones you will most likely use are `linux-x64`, `osx-x64` and `win-x64`, which all are 64 bit. If you don't want to have the executable in a single file, you can remove `-c Release /p:PublishSingleFile=true` from the end of the command.

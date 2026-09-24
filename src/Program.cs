@@ -32,7 +32,7 @@ class Program
     private FileSystemWatcher? FeedWatcher;
     private string? TenorAPI;
     private int? Mode;
-    public const string Version = "1.2.1";
+    public const string Version = "1.3";
     static async Task Main(string[] args) {
         // Console.WriteLine("Hello, World!");
         const string Version = "1.2.1";
@@ -43,32 +43,32 @@ class Program
             ConfigPath = "config.toml";
         } else if (args[0] == "--help" || args[0] == "-h") {    // Thanks to http://patorjk.com/software/taag/ for the fun ASCII art!
             Console.Write(@"
-               ░██ ░██                                                                
-               ░██                                                                    
-         ░████████ ░██ ░███████   ░███████   ░███████  ░██░████  ░███████   ░███████  
-        ░██    ░██ ░██░██        ░██    ░██ ░██    ░██ ░███     ░██        ░██        
-        ░██    ░██ ░██ ░███████  ░██        ░██    ░██ ░██       ░███████   ░███████  
-        ░██   ░███ ░██       ░██ ░██    ░██ ░██    ░██ ░██             ░██        ░██ 
-         ░█████░██ ░██ ░███████   ░███████   ░███████  ░██       ░███████   ░███████ 
+ ______   ___   _______  _______  _______  __   __  __    _  ______   ___   _______  _______  _______  ___   _______  __    _ 
+|      | |   | |       ||       ||       ||  | |  ||  |  | ||      | |   | |       ||   _   ||       ||   | |       ||  |  | |
+|  _    ||   | |  _____||       ||  _____||  |_|  ||   |_| ||  _    ||   | |       ||  |_|  ||_     _||   | |   _   ||   |_| |
+| | |   ||   | | |_____ |       || |_____ |       ||       || | |   ||   | |       ||       |  |   |  |   | |  | |  ||       |
+| |_|   ||   | |_____  ||      _||_____  ||_     _||  _    || |_|   ||   | |      _||       |  |   |  |   | |  |_|  ||  _    |
+|       ||   |  _____| ||     |_  _____| |  |   |  | | |   ||       ||   | |     |_ |   _   |  |   |  |   | |       || | |   |
+|______| |___| |_______||_______||_______|  |___|  |_|  |__||______| |___| |_______||__| |__|  |___|  |___| |_______||_|  |__|
                                                                                      
-                   A simple tool to link a Discord channel and an RSS feed.
-        
-                         Use: $ discross (-h)(-v) [config file path]
+                                    A simple tool to link a Discord channel and an RSS feed.
+                        
+                                        Use: $ discross (-h)(-v) [config file path]
 
-                        -h or --help    —  display this message and exit.
-                        -v or --version —  print the version and exit.
-                        [config]        —  file path to your config file;
-                                                 it must be a .toml file.
-                    If not specified, the app looks in its directory for a
-                    'config.toml'. If that isn't present either, exit.
-        
-                    The RSS feed file is specified in the config. If empty,
-                    the program exists with a message, asking to specify it
+                                        -h or --help    —  display this message and exit.
+                                        -v or --version —  print the version and exit.
+                                        [config]        —  file path to your config file;
+                                                                it must be a .toml file.
+                                    If not specified, the app looks in its directory for a
+                                    'config.toml'. If that isn't present either, exit.
+                        
+                                    The RSS feed file is specified in the config. If empty,
+                                    the program exists with a message, asking to specify it
 
-                        discorss " + Version + "\n");
+                                    discsyndication " + Version + "\n");
                         Environment.Exit(0);            // This is the help message you get when using the '-h' or '--help' argument
         } else if (args[0] == "--version" || args[0] == "-v") {
-            Console.WriteLine("discorss v" + Version);
+            Console.WriteLine("discsyndication v" + Version);
             Environment.Exit(0);
         } else {
             ConfigPath = args[0];
