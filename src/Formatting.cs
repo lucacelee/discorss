@@ -101,7 +101,7 @@ namespace Formatting {
                         ConvertedTime = TimeUTC.ToString("HH:mm:ss ") + "GMT";
                         break;
                     case "d":
-                        ConvertedTime = TimeUTC.ToString("dd.MM.yyyy");
+                        ConvertedTime = TimeUTC.ToString("dd MMM yyyy");
                         break;
                     case "D":
                         ConvertedTime = TimeUTC.ToString("dd MMMM yyyy");
@@ -113,7 +113,13 @@ namespace Formatting {
                         ConvertedTime = TimeUTC.ToString("dddd, dd MMMM yyyy HH:mm ") + "GMT";
                         break;
                     case "R":
-                        string TimeOffset = (TimeUTC - DateTime.UtcNow).ToString();
+                        TimeSpan Interval = TimeUTC - DateTime.UtcNow;
+                        string TimeOffset = Interval.ToString(@"d\.h\:m\!")
+                                                    .Replace(".", " days ")
+                                                    .Replace(":", " hours ")
+                                                    .Replace("!", " minutes")
+                                                    .Replace("0 days ", "")
+                                                    .Replace(" 0 minutes", "");
                         ConvertedTime = Regex.Replace((TimeOffset[0] == '-') ? (TimeOffset[1..] + " ago") : ("in " + TimeOffset), @"(\.\d+)$", "").Replace(".", " days ");
                         break;
                 } 
