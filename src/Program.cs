@@ -333,7 +333,7 @@ class Program
         return (Message, null, null);
     }
 
-    private async Task<string> ReplaceDiscordAngleBrackets (DiscordClient s, string Message) {
+    private static async Task<string> ReplaceDiscordAngleBrackets (DiscordClient s, string Message) {
         string UserRegex = @"<@(?<User>\d+)>";
         string ChannelRegex = @"<#(?<Channel>\d+)>";
 
